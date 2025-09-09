@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Outer glow effect -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="80dp"
+                android:startColor="#15667eea"
+                android:endColor="#00667eea" />
+        </shape>
+    </item>
+    
+    <!-- Shadow layer -->
+    <item
+        android:left="8dp"
+        android:top="8dp"
+        android:right="8dp"
+        android:bottom="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#25000000" />
+        </shape>
+    </item>
+    
+    <!-- Main elevated circle -->
+    <item
+        android:left="12dp"
+        android:top="12dp"
+        android:right="16dp"
+        android:bottom="16dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="@color/white"
+                android:endColor="#F8FAFC" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/primary_container" />
+        </shape>
+    </item>
+    
+</layer-list>

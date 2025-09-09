@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import androidx.appcompat.app.AppCompatActivity;
 import android.widget.TextView;
@@ -39,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvForgotPassword, tvSignUp;
     private MaterialCardView loginCard;
     private View logoContainer;
+    private View decorativeCircleBlue1, decorativeCircleRed1, decorativeCircleBlue2, decorativeCircleRed2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +57,12 @@ public class MainActivity extends AppCompatActivity {
         tvSignUp = findViewById(R.id.tvSignUp);
         loginCard = findViewById(R.id.loginCard);
         logoContainer = findViewById(R.id.logoContainer);
+        
+        // Initialize decorative elements
+        decorativeCircleBlue1 = findViewById(R.id.decorativeCircleBlue1);
+        decorativeCircleRed1 = findViewById(R.id.decorativeCircleRed1);
+        decorativeCircleBlue2 = findViewById(R.id.decorativeCircleBlue2);
+        decorativeCircleRed2 = findViewById(R.id.decorativeCircleRed2);
 
         // Setup animations
         setupEntranceAnimations();
@@ -88,15 +96,53 @@ public class MainActivity extends AppCompatActivity {
     private void setupEntranceAnimations() {
         // Initially hide views for animation
         logoContainer.setAlpha(0f);
-        logoContainer.setTranslationY(-100f);
+        logoContainer.setScaleX(0.3f);
+        logoContainer.setScaleY(0.3f);
         loginCard.setAlpha(0f);
         loginCard.setTranslationY(100f);
 
-        // Animate logo entrance
+        // Hide decorative circles initially
+        decorativeCircleBlue1.setAlpha(0f);
+        decorativeCircleRed1.setAlpha(0f);
+        decorativeCircleBlue2.setAlpha(0f);
+        decorativeCircleRed2.setAlpha(0f);
+
+        // Animate decorative circles with staggered entrance
+        decorativeCircleBlue1.animate()
+                .alpha(0.3f)
+                .setDuration(1200)
+                .setStartDelay(100)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        decorativeCircleRed1.animate()
+                .alpha(0.25f)
+                .setDuration(1000)
+                .setStartDelay(300)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        decorativeCircleBlue2.animate()
+                .alpha(0.2f)
+                .setDuration(800)
+                .setStartDelay(500)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        decorativeCircleRed2.animate()
+                .alpha(0.15f)
+                .setDuration(600)
+                .setStartDelay(700)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        // Animate logo entrance with scale and fade
         logoContainer.animate()
                 .alpha(1f)
-                .translationY(0f)
-                .setDuration(800)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(1000)
+                .setStartDelay(400)
                 .setInterpolator(new DecelerateInterpolator())
                 .start();
 
@@ -105,9 +151,44 @@ public class MainActivity extends AppCompatActivity {
                 .alpha(1f)
                 .translationY(0f)
                 .setDuration(800)
-                .setStartDelay(200)
+                .setStartDelay(800)
                 .setInterpolator(new DecelerateInterpolator())
                 .start();
+
+        // Start continuous floating animation for decorative circles
+        startFloatingAnimation();
+    }
+
+    private void startFloatingAnimation() {
+        // Floating animation for blue circles
+        ObjectAnimator floatBlue1 = ObjectAnimator.ofFloat(decorativeCircleBlue1, "translationY", 0f, -20f, 0f);
+        floatBlue1.setDuration(4000);
+        floatBlue1.setRepeatCount(ObjectAnimator.INFINITE);
+        floatBlue1.setInterpolator(new AccelerateDecelerateInterpolator());
+        floatBlue1.setStartDelay(1000);
+        floatBlue1.start();
+
+        ObjectAnimator floatBlue2 = ObjectAnimator.ofFloat(decorativeCircleBlue2, "translationY", 0f, 15f, 0f);
+        floatBlue2.setDuration(3500);
+        floatBlue2.setRepeatCount(ObjectAnimator.INFINITE);
+        floatBlue2.setInterpolator(new AccelerateDecelerateInterpolator());
+        floatBlue2.setStartDelay(1500);
+        floatBlue2.start();
+
+        // Floating animation for red circles
+        ObjectAnimator floatRed1 = ObjectAnimator.ofFloat(decorativeCircleRed1, "translationX", 0f, 10f, 0f);
+        floatRed1.setDuration(5000);
+        floatRed1.setRepeatCount(ObjectAnimator.INFINITE);
+        floatRed1.setInterpolator(new AccelerateDecelerateInterpolator());
+        floatRed1.setStartDelay(2000);
+        floatRed1.start();
+
+        ObjectAnimator floatRed2 = ObjectAnimator.ofFloat(decorativeCircleRed2, "translationX", 0f, -8f, 0f);
+        floatRed2.setDuration(4500);
+        floatRed2.setRepeatCount(ObjectAnimator.INFINITE);
+        floatRed2.setInterpolator(new AccelerateDecelerateInterpolator());
+        floatRed2.setStartDelay(2500);
+        floatRed2.start();
     }
 
     private void animateButtonClick(View view) {
@@ -166,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
             button.setEnabled(false);
             // Add subtle pulse animation while loading
             ObjectAnimator pulse = ObjectAnimator.ofFloat(button, "alpha", 1f, 0.7f, 1f);
-            pulse.setDuration(1000);
+            pulse.setDuration(500);
             pulse.setRepeatCount(ObjectAnimator.INFINITE);
             pulse.start();
             button.setTag(pulse); // Store reference to cancel later
@@ -254,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
                             context,
                             context.getString(R.string.loading_login_message),
                             MapsActivity.class,
-                            4000  // 4 seconds loading time
+                            2000  // 4 seconds loading time
                         );
                         loadingIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         context.startActivity(loadingIntent);
