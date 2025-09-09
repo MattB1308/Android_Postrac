@@ -1,15 +1,22 @@
 package com.example.skyapp;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Button;
+import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import androidx.appcompat.app.AppCompatActivity;
-import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.card.MaterialCardView;
 
 import com.example.skyapp.api_config.login.LoginInterface;
 import com.example.skyapp.api_config.client;
@@ -27,32 +34,98 @@ import com.google.gson.Gson;
 
 public class MainActivity extends AppCompatActivity {
 
-    private EditText etEmail, etPassword;
-    private Button btnLogin, btnGoogle, btnOutlook;
+    private TextInputEditText etEmail, etPassword;
+    private MaterialButton btnLogin, btnGoogle, btnOutlook;
+    private TextView tvForgotPassword, tvSignUp;
+    private MaterialCardView loginCard;
+    private View logoContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        // Initialize views
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         btnGoogle = findViewById(R.id.btnGoogle);
         btnOutlook = findViewById(R.id.btnOutlook);
+        tvForgotPassword = findViewById(R.id.tvForgotPassword);
+        tvSignUp = findViewById(R.id.tvSignUp);
+        loginCard = findViewById(R.id.loginCard);
+        logoContainer = findViewById(R.id.logoContainer);
 
+        // Setup animations
+        setupEntranceAnimations();
+
+        // Set click listeners
         btnLogin.setOnClickListener(v -> login());
 
         btnGoogle.setOnClickListener(v -> {
+            animateButtonClick(btnGoogle);
             Toast.makeText(this, "Google Login Clicked", Toast.LENGTH_SHORT).show();
-            // Aquí iría la integración con Google Sign-In
+            // TODO: Integrate Google Sign-In
         });
 
         btnOutlook.setOnClickListener(v -> {
-            Toast.makeText(this, "Outlook Login Clicked", Toast.LENGTH_SHORT).show();
-            // Aquí iría la integración con Outlook OAuth
+            animateButtonClick(btnOutlook);
+            Toast.makeText(this, "Microsoft Login Clicked", Toast.LENGTH_SHORT).show();
+            // TODO: Integrate Microsoft OAuth
         });
+
+        tvForgotPassword.setOnClickListener(v -> {
+            Toast.makeText(this, "Forgot Password Clicked", Toast.LENGTH_SHORT).show();
+            // TODO: Implement forgot password functionality
+        });
+
+        tvSignUp.setOnClickListener(v -> {
+            Toast.makeText(this, "Sign Up Clicked", Toast.LENGTH_SHORT).show();
+            // TODO: Navigate to sign up activity
+        });
+    }
+
+    private void setupEntranceAnimations() {
+        // Initially hide views for animation
+        logoContainer.setAlpha(0f);
+        logoContainer.setTranslationY(-100f);
+        loginCard.setAlpha(0f);
+        loginCard.setTranslationY(100f);
+
+        // Animate logo entrance
+        logoContainer.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(800)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        // Animate card entrance with delay
+        loginCard.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(800)
+                .setStartDelay(200)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+    }
+
+    private void animateButtonClick(View view) {
+        // Scale animation for button feedback
+        ObjectAnimator scaleDown = ObjectAnimator.ofFloat(view, "scaleX", 0.95f);
+        scaleDown.setDuration(100);
+        
+        ObjectAnimator scaleUp = ObjectAnimator.ofFloat(view, "scaleX", 1f);
+        scaleUp.setDuration(100);
+        
+        scaleDown.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                scaleUp.start();
+            }
+        });
+        
+        scaleDown.start();
     }
 
     private void login() {
@@ -60,17 +133,67 @@ public class MainActivity extends AppCompatActivity {
         String password = etPassword.getText().toString().trim();
 
         if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+            showErrorMessage("Please fill in all fields");
             return;
         }
 
-        // Validar formato del email
+        // Validate email format
         if (!isValidEmail(email)) {
-            Toast.makeText(this, "Please enter a valid email", Toast.LENGTH_SHORT).show();
+            showErrorMessage("Please enter a valid email");
             return;
         }
 
+        // Animate button loading state
+        animateButtonLoading(btnLogin, true);
         loginUser(this, email, password);
+    }
+
+    private void showErrorMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        // Shake animation for error feedback
+        shakeView(loginCard);
+    }
+
+    private void shakeView(View view) {
+        ObjectAnimator shake = ObjectAnimator.ofFloat(view, "translationX", 0, 25, -25, 25, -25, 15, -15, 6, -6, 0);
+        shake.setDuration(600);
+        shake.start();
+    }
+
+    private void animateButtonLoading(MaterialButton button, boolean isLoading) {
+        if (isLoading) {
+            button.setText("Signing in...");
+            button.setEnabled(false);
+            // Add subtle pulse animation while loading
+            ObjectAnimator pulse = ObjectAnimator.ofFloat(button, "alpha", 1f, 0.7f, 1f);
+            pulse.setDuration(1000);
+            pulse.setRepeatCount(ObjectAnimator.INFINITE);
+            pulse.start();
+            button.setTag(pulse); // Store reference to cancel later
+        } else {
+            button.setText(getString(R.string.login_button_text));
+            button.setEnabled(true);
+            // Cancel pulse animation
+            ObjectAnimator pulseAnim = (ObjectAnimator) button.getTag();
+            if (pulseAnim != null) {
+                pulseAnim.cancel();
+                button.setAlpha(1f);
+            }
+        }
+    }
+
+    private void showSuccessAnimation() {
+        // Change login button to success state temporarily
+        btnLogin.setText("Success!");
+        btnLogin.setBackgroundColor(getResources().getColor(android.R.color.holo_green_light));
+        
+        // Scale up animation for success feedback
+        ObjectAnimator scaleUpX = ObjectAnimator.ofFloat(loginCard, "scaleX", 1f, 1.05f, 1f);
+        ObjectAnimator scaleUpY = ObjectAnimator.ofFloat(loginCard, "scaleY", 1f, 1.05f, 1f);
+        scaleUpX.setDuration(600);
+        scaleUpY.setDuration(600);
+        scaleUpX.start();
+        scaleUpY.start();
     }
 
     private boolean isValidEmail(String email) {
@@ -86,11 +209,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        ProgressDialog progressDialog = new ProgressDialog(context);
-        progressDialog.setMessage("Logging in...");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
-
+        // Use modern Material Design progress indicator instead of deprecated ProgressDialog
         LoginInterface apiService = client.getClient(context).create(LoginInterface.class);
 
         // 🔹 Crea el request
@@ -106,7 +225,10 @@ public class MainActivity extends AppCompatActivity {
         call.enqueue(new Callback<BO_response.LoginResponse>() {
             @Override
             public void onResponse(Call<BO_response.LoginResponse> call, Response<BO_response.LoginResponse> response) {
-                progressDialog.dismiss();
+                // Reset button loading state
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).animateButtonLoading(((MainActivity) context).btnLogin, false);
+                }
 
                 // ✅ LOG DEL RESPONSE (status + headers)
                 Log.d("LOGIN_RESPONSE", "code=" + response.code() + ", message=" + response.message());
@@ -115,15 +237,25 @@ public class MainActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     // ✅ Body parseado
                     Log.d("LOGIN_RESPONSE", "body=" + new Gson().toJson(response.body()));
-                    Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show();
-
+                    
+                    // Show success animation before navigation
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).showSuccessAnimation();
+                    }
+                    
                     String loginResponseJson = new Gson().toJson(response.body());
                     SharedPreferences sharedPreferences = context.getSharedPreferences("LoginInfo", Context.MODE_PRIVATE);
                     sharedPreferences.edit().putString("login_response", loginResponseJson).apply();
 
-                    Intent intent = new Intent(context, MapsActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    context.startActivity(intent);
+                    // Delay navigation to show success animation
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        Intent intent = new Intent(context, MapsActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        context.startActivity(intent);
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                        }
+                    }, 1000);
                 } else {
                     // ✅ Body de error crudo (si viene)
                     try {
@@ -132,16 +264,30 @@ public class MainActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         Log.e("LOGIN_RESPONSE_ERROR", "No se pudo leer errorBody()", e);
                     }
-                    Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show();
+                    
+                    if (context instanceof MainActivity) {
+                        ((MainActivity) context).showErrorMessage("Invalid credentials");
+                    } else {
+                        Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<BO_response.LoginResponse> call, Throwable t) {
-                progressDialog.dismiss();
+                // Reset button loading state
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).animateButtonLoading(((MainActivity) context).btnLogin, false);
+                }
+                
                 // ✅ Error de red/timeout/etc.
                 Log.e("LOGIN_FAILURE", "onFailure: " + t.getMessage(), t);
-                Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).showErrorMessage("Network error: " + t.getMessage());
+                } else {
+                    Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

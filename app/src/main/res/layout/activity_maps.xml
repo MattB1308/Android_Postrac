@@ -33,7 +33,9 @@
             android:textColor="#000000"
             android:ellipsize="end"
             android:singleLine="true"
-            android:gravity="center" />
+            android:gravity="center"
+            android:drawableTop="@drawable/profile"
+            />
 
         <Button
             android:id="@+id/btn_shipment"

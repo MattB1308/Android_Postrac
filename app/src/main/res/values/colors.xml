@@ -1,9 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material Design 3 Color System -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorPrimary">#003366</color>
-    <color name="colorPrimaryVariant">#808080</color>
-    <color name="colorSecondary">#004C99</color>
+    
+    <!-- SEPEX Brand Colors -->
+    <color name="sepex_blue">#1E3A8A</color>
+    <color name="sepex_red">#DC2626</color>
+    <color name="sepex_light_blue">#3B82F6</color>
+    <color name="sepex_light_red">#EF4444</color>
+    
+    <!-- Modern Color Palette with SEPEX branding -->
+    <color name="primary">#1E3A8A</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#E0E7FF</color>
+    <color name="on_primary_container">#1E3A8A</color>
+    
+    <color name="secondary">#DC2626</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="secondary_container">#FEE2E2</color>
+    <color name="on_secondary_container">#DC2626</color>
+    
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#1F2937</color>
+    <color name="surface_variant">#F8FAFC</color>
+    <color name="on_surface_variant">#6B7280</color>
+    
+    <color name="background">#FFFFFF</color>
+    <color name="on_background">#1F2937</color>
+    
+    <color name="outline">#D1D5DB</color>
+    <color name="outline_variant">#E5E7EB</color>
+    
+    <!-- Login specific colors -->
+    <color name="login_background">#FFFFFF</color>
+    <color name="login_card_background">#FFFFFF</color>
+    <color name="login_text_secondary">#6B7280</color>
+    <color name="login_divider">#E5E7EB</color>
+    
+    <!-- Social login colors -->
+    <color name="google_blue">#4285F4</color>
+    <color name="microsoft_blue">#0078D4</color>
+    
+    <!-- Legacy colors for compatibility -->
+    <color name="colorPrimary">#6750A4</color>
+    <color name="colorPrimaryVariant">#21005D</color>
+    <color name="colorSecondary">#625B71</color>
 
 </resources>
