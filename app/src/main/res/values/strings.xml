@@ -19,6 +19,15 @@
     <string name="login_forgot_password">Forgot password?</string>
     <string name="login_no_account">Don\'t have an account? <b>Sign up</b></string>
     
+    <!-- Loading Screen -->
+    <string name="loading_default_message">Loading...</string>
+    <string name="loading_login_message">Preparing your workspace</string>
+    <string name="loading_profile_message">Loading profile data</string>
+    <string name="loading_shipments_message">Loading shipments</string>
+    <string name="loading_routes_message">Loading routes</string>
+    <string name="loading_checkpoints_message">Loading checkpoints</string>
+    <string name="loading_secondary_message">Please wait while we prepare everything for you</string>
+    
     <!-- Content Descriptions -->
     <string name="content_desc_sepex_logo">SEPEX company logo</string>
     <string name="content_desc_google_icon">Google logo</string>

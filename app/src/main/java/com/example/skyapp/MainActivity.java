@@ -247,11 +247,18 @@ public class MainActivity extends AppCompatActivity {
                     SharedPreferences sharedPreferences = context.getSharedPreferences("LoginInfo", Context.MODE_PRIVATE);
                     sharedPreferences.edit().putString("login_response", loginResponseJson).apply();
 
-                    // Delay navigation to show success animation
+                    // Delay navigation to show success animation, then show loading screen
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                        Intent intent = new Intent(context, MapsActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        context.startActivity(intent);
+                        // Create intent for loading screen that will navigate to MapsActivity
+                        Intent loadingIntent = LoadingActivity.createIntent(
+                            context,
+                            context.getString(R.string.loading_login_message),
+                            MapsActivity.class,
+                            4000  // 4 seconds loading time
+                        );
+                        loadingIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        context.startActivity(loadingIntent);
+                        
                         if (context instanceof MainActivity) {
                             ((MainActivity) context).overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
                         }

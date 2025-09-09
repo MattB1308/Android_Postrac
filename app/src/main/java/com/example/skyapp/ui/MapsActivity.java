@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 
+import com.example.skyapp.LoadingActivity;
 import com.example.skyapp.R;
 import com.example.skyapp.bo.login.BO_response;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -84,10 +85,46 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Button btnRoute = findViewById(R.id.btn_route);
         Button btnCheckpoint = findViewById(R.id.btn_checkpoint);
 
-        btnProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
-        btnShipment.setOnClickListener(v -> startActivity(new Intent(this, ShipmentsActivity.class)));
-        btnRoute.setOnClickListener(v -> startActivity(new Intent(this, RouteActivity.class)));
-        btnCheckpoint.setOnClickListener(v -> startActivity(new Intent(this, CheckpointActivity.class)));
+        // Set click listeners with loading screens
+        btnProfile.setOnClickListener(v -> {
+            Intent loadingIntent = LoadingActivity.createIntent(
+                this,
+                getString(R.string.loading_profile_message),
+                ProfileActivity.class,
+                2500
+            );
+            startActivity(loadingIntent);
+        });
+
+        btnShipment.setOnClickListener(v -> {
+            Intent loadingIntent = LoadingActivity.createIntent(
+                this,
+                getString(R.string.loading_shipments_message),
+                ShipmentsActivity.class,
+                3000
+            );
+            startActivity(loadingIntent);
+        });
+
+        btnRoute.setOnClickListener(v -> {
+            Intent loadingIntent = LoadingActivity.createIntent(
+                this,
+                getString(R.string.loading_routes_message),
+                RouteActivity.class,
+                2800
+            );
+            startActivity(loadingIntent);
+        });
+
+        btnCheckpoint.setOnClickListener(v -> {
+            Intent loadingIntent = LoadingActivity.createIntent(
+                this,
+                getString(R.string.loading_checkpoints_message),
+                CheckpointActivity.class,
+                3200
+            );
+            startActivity(loadingIntent);
+        });
 
     }
 

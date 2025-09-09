@@ -23,6 +23,10 @@
         android:theme="@style/Theme.Skyapp"
         tools:targetApi="31">
         <activity
+            android:name=".LoadingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Skyapp" />
+        <activity
             android:name=".ui.CheckpointActivity"
             android:exported="false" />
         <activity
