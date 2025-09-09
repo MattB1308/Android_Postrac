@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">Skyapp</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_avatar">Profile avatar</string>
+    <string name="profile_first_name">First name</string>
+    <string name="profile_last_name">Last name</string>
+    <string name="profile_created">Created</string>
 </resources>

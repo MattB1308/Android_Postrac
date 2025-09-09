@@ -6,16 +6,18 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 
 import com.example.skyapp.R;
-import com.example.skyapp.bo.BO_response;
+import com.example.skyapp.bo.login.BO_response;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -76,6 +78,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        Button btnProfile = findViewById(R.id.btn_profile);
+        Button btnShipment = findViewById(R.id.btn_shipment);
+        Button btnRoute = findViewById(R.id.btn_route);
+        Button btnCheckpoint = findViewById(R.id.btn_checkpoint);
+
+        btnProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
+        btnShipment.setOnClickListener(v -> startActivity(new Intent(this, ShipmentsActivity.class)));
+        btnRoute.setOnClickListener(v -> startActivity(new Intent(this, RouteActivity.class)));
+        btnCheckpoint.setOnClickListener(v -> startActivity(new Intent(this, CheckpointActivity.class)));
+
     }
 
     @Override

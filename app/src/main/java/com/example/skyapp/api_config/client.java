@@ -16,7 +16,7 @@ public class client {
                     .build();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl("https://api-user.studiomist.io/")
+                    .baseUrl("https://login.sepex.io/")
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

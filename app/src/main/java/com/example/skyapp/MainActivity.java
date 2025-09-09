@@ -11,10 +11,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.example.skyapp.api_config.Interface;
+import com.example.skyapp.api_config.login.LoginInterface;
 import com.example.skyapp.api_config.client;
-import com.example.skyapp.bo.BO_request;
-import com.example.skyapp.bo.BO_response;
+import com.example.skyapp.api_config.login.LoginInterface;
+import com.example.skyapp.bo.login.BO_request;
+import com.example.skyapp.bo.login.BO_response;
 import com.example.skyapp.ui.MapsActivity;
 //API CALL
 import retrofit2.Call;
@@ -90,43 +91,47 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // 🔹 Obtiene la instancia de Retrofit
-        Interface apiService = client.getClient(context).create(Interface.class);
+        LoginInterface apiService = client.getClient(context).create(LoginInterface.class);
 
-        // 🔹 Crea el objeto de solicitud con el appKey "ok"
-        BO_request.LoginRequest request = new BO_request.LoginRequest(email, password, "ok");
+        // 🔹 Crea el request
+        BO_request.LoginRequest request = new BO_request.LoginRequest(email, password, "83d6661f-9f64-43c4-b672-cdcab3a57685");
 
-        // 🔹 Llama a la API
+        // ✅ LOG DEL REQUEST (lo que mandas)
+        Log.d("LOGIN_REQUEST", "-> " + new Gson().toJson(request));
+
         Call<BO_response.LoginResponse> call = apiService.login(request);
+        // Antes de ejecutar la llamada
+        Log.d("LOGIN_URL", "Request URL: " + call.request().url().toString());
+
         call.enqueue(new Callback<BO_response.LoginResponse>() {
             @Override
             public void onResponse(Call<BO_response.LoginResponse> call, Response<BO_response.LoginResponse> response) {
                 progressDialog.dismiss();
-                Log.d("API response", "Login Response: " + response.toString());
 
-                //Log.d("API response", "Login response: " + new Gson().toJson(response));
+                // ✅ LOG DEL RESPONSE (status + headers)
+                Log.d("LOGIN_RESPONSE", "code=" + response.code() + ", message=" + response.message());
+                Log.d("LOGIN_RESPONSE", "headers=" + response.headers().toString());
 
                 if (response.isSuccessful() && response.body() != null) {
-                    Log.d("LOGIN_RESPONSE", "Success: " + new Gson().toJson(response.body()));
-
+                    // ✅ Body parseado
+                    Log.d("LOGIN_RESPONSE", "body=" + new Gson().toJson(response.body()));
                     Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show();
 
-                    // 🔹 Guarda el token en SharedPreferences
-                    // 🔹 Serializar el objeto LoginResponse a JSON
                     String loginResponseJson = new Gson().toJson(response.body());
-
-                    // 🔹 Guardar el JSON en SharedPreferences
                     SharedPreferences sharedPreferences = context.getSharedPreferences("LoginInfo", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("login_response", loginResponseJson);
-                    editor.apply();
+                    sharedPreferences.edit().putString("login_response", loginResponseJson).apply();
 
-
-                    // 🔹 Ir a la siguiente pantalla
                     Intent intent = new Intent(context, MapsActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     context.startActivity(intent);
                 } else {
+                    // ✅ Body de error crudo (si viene)
+                    try {
+                        String errorRaw = response.errorBody() != null ? response.errorBody().string() : "null";
+                        Log.e("LOGIN_RESPONSE_ERROR", errorRaw);
+                    } catch (Exception e) {
+                        Log.e("LOGIN_RESPONSE_ERROR", "No se pudo leer errorBody()", e);
+                    }
                     Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -134,10 +139,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<BO_response.LoginResponse> call, Throwable t) {
                 progressDialog.dismiss();
+                // ✅ Error de red/timeout/etc.
+                Log.e("LOGIN_FAILURE", "onFailure: " + t.getMessage(), t);
                 Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
 
 

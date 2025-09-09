@@ -1,4 +1,4 @@
-package com.example.skyapp.bo;
+package com.example.skyapp.bo.login;
 
 import com.google.gson.annotations.SerializedName;
 
