@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.skyapp.R;
 import com.example.skyapp.api_config.client;
+import com.example.skyapp.api_config.ApiService;
 import com.example.skyapp.api_config.user.UserInterface;
 import com.example.skyapp.bo.login.BO_response;
 import com.example.skyapp.bo.user.BO_request;
@@ -125,8 +126,8 @@ public class ProfileActivity extends AppCompatActivity {
         Log.d("ProfileActivity", "Making API request with userId: " + userId + ", userUuid: " + userUuid);
         Log.d("ProfileActivity", "Request JSON: " + new Gson().toJson(request));
 
-        // Create API service
-        UserInterface apiService = client.getClient(this).create(UserInterface.class);
+        // Create API service using USERS service
+        UserInterface apiService = client.createService(this, ApiService.USERS, UserInterface.class);
 
         // Make API call
         Call<com.example.skyapp.bo.user.BO_response.ProfileResponse> call = 

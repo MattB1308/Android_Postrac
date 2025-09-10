@@ -206,6 +206,7 @@ public class LoadingActivity extends AppCompatActivity {
     public void onBackPressed() {
         // Disable back button during loading to prevent interruption
         // Optionally, you can allow back button by calling super.onBackPressed()
+        super.onBackPressed();
     }
 
     // Helper method to create intent for this activity

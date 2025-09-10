@@ -42,7 +42,7 @@
                 android:layout_marginBottom="16dp"
                 android:alpha="0.6"
                 android:src="@drawable/profile"
-                android:tint="@color/on_surface_variant" />
+                app:tint="@color/on_surface_variant" />
 
             <TextView
                 android:id="@+id/tvErrorMessage"
@@ -109,7 +109,7 @@
                             android:contentDescription="Profile avatar"
                             android:scaleType="centerInside"
                             android:src="@drawable/profile"
-                            android:tint="@color/sepex_blue" />
+                            app:tint="@color/sepex_blue" />
 
                     </FrameLayout>
 
