@@ -6,20 +6,37 @@
     android:background="@color/background"
     android:padding="32dp">
 
-    <!-- SEPEX Logo -->
-    <ImageView
-        android:id="@+id/ivSepexLogo"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:layout_marginBottom="48dp"
-        android:contentDescription="@string/content_desc_sepex_logo"
-        android:scaleType="centerInside"
-        android:src="@drawable/sepex_logo"
+    <!-- SEPEX Logo with Background -->
+    <FrameLayout
+        android:id="@+id/logoContainer"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginBottom="64dp"
         app:layout_constraintBottom_toTopOf="@+id/loadingContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <!-- Logo Background Circle -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/logo_container_elevated" />
+
+        <!-- SEPEX Logo -->
+        <ImageView
+            android:id="@+id/ivSepexLogo"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/content_desc_sepex_logo"
+            android:scaleType="centerInside"
+            android:src="@drawable/sepex_logo"
+            app:tint="@color/sepex_blue" />
+
+    </FrameLayout>
 
     <!-- Loading Container -->
     <LinearLayout
@@ -31,7 +48,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ivSepexLogo">
+        app:layout_constraintTop_toBottomOf="@+id/logoContainer">
 
         <!-- Loading Text -->
         <TextView
@@ -100,7 +117,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:text="@string/app_name"
+        android:text="StudioMist"
         android:textColor="@color/on_surface_variant"
         android:textSize="12sp"
         android:alpha="0.7"
