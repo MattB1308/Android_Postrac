@@ -39,6 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView tvFullName;
     private TextView tvEmail;
     private TextView tvUserUuid;
+    private TextView tvUserId;
     private TextView tvDateCreated;
     private TextView tvErrorMessage;
     private MaterialButton btnRetry;
@@ -68,6 +69,7 @@ public class ProfileActivity extends AppCompatActivity {
         tvFullName = findViewById(R.id.tvFullName);
         tvEmail = findViewById(R.id.tvEmail);
         tvUserUuid = findViewById(R.id.tvUserUuid);
+        tvUserId = findViewById(R.id.tvUserId);
         tvDateCreated = findViewById(R.id.tvDateCreated);
         tvErrorMessage = findViewById(R.id.tvErrorMessage);
         btnRetry = findViewById(R.id.btnRetry);
@@ -177,6 +179,7 @@ public class ProfileActivity extends AppCompatActivity {
             tvFullName.setText(fullName != null ? fullName : "Name not available");
             tvEmail.setText(email != null ? email : "Email not available");
             tvUserUuid.setText(userUuidFromApi != null ? userUuidFromApi : userUuid);
+            tvUserId.setText(String.valueOf(userId));
 
             // Format date if available
             if (dateCreated != null) {
