@@ -130,10 +130,11 @@
                         android:padding="12dp">
 
                         <TextView
+                            android:id="@+id/txtTotalPackages"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
-                            android:text="156"
+                            android:text="0"
                             android:textColor="@color/sepex_red"
                             android:textSize="24sp"
                             android:textStyle="bold" />
@@ -157,10 +158,11 @@
                         android:padding="12dp">
 
                         <TextView
+                            android:id="@+id/txtInTransitPackages"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
-                            android:text="34"
+                            android:text="0"
                             android:textColor="@color/sepex_blue"
                             android:textSize="24sp"
                             android:textStyle="bold" />
@@ -184,10 +186,11 @@
                         android:padding="12dp">
 
                         <TextView
+                            android:id="@+id/txtDeliveredPackages"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
-                            android:text="122"
+                            android:text="0"
                             android:textColor="@color/sepex_blue"
                             android:textSize="24sp"
                             android:textStyle="bold" />
@@ -242,7 +245,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:layout_marginBottom="8dp"
-                    android:text="Track Shipments"
+                    android:text="Show Package List"
                     android:textAllCaps="false"
                     app:backgroundTint="@color/sepex_red"
                     app:cornerRadius="12dp" />
@@ -266,7 +269,7 @@
                     android:id="@+id/btnViewReports"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="View Reports"
+                    android:text="Refresh Data"
                     android:textAllCaps="false"
                     app:backgroundTint="@null"
                     app:cornerRadius="12dp"
@@ -278,6 +281,17 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Package List Section -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewPackages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:layout_constraintTop_toBottomOf="@+id/actionsCard"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:visibility="gone" />
+
         <!-- Navigation Section -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/navigationCard"
@@ -286,7 +300,7 @@
             app:cardBackgroundColor="@color/surface"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
-            app:layout_constraintTop_toBottomOf="@+id/actionsCard"
+            app:layout_constraintTop_toBottomOf="@+id/recyclerViewPackages"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 

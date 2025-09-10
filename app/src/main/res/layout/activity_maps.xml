@@ -250,18 +250,126 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Floating Action Button for Location -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_location"
+    <!-- Route Filter Controls -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/routeFilterCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:layout_marginTop="72dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/surface"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Show Points:"
+                android:textColor="@color/on_surface"
+                android:textSize="14sp" />
+
+            <!-- Filter Buttons -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShowNext1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="1"
+                    android:textSize="12sp"
+                    app:backgroundTint="@color/sepex_blue"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.Material3.Button" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShowNext5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="5"
+                    android:textSize="12sp"
+                    app:backgroundTint="@null"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="@color/sepex_blue"
+                    app:strokeWidth="1dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShowNext10"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="10"
+                    android:textSize="12sp"
+                    app:backgroundTint="@null"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="@color/sepex_blue"
+                    app:strokeWidth="1dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            </LinearLayout>
+
+            <!-- Load Routes Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLoadRoutes"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_marginTop="8dp"
+                android:text="Load Routes"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                app:backgroundTint="@color/sepex_red"
+                app:cornerRadius="8dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Floating Action Buttons -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
         android:layout_margin="16dp"
         android:layout_marginTop="72dp"
-        android:contentDescription="My Location"
-        android:src="@drawable/map_point"
-        app:backgroundTint="@color/sepex_blue"
-        app:fabSize="normal"
-        app:tint="@color/on_primary" />
+        android:orientation="vertical">
+
+        <!-- Location FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="My Location"
+            android:src="@drawable/map_point"
+            app:backgroundTint="@color/sepex_blue"
+            app:fabSize="mini"
+            app:tint="@color/on_primary" />
+
+        <!-- Route Filter Toggle FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Route Filter"
+            android:src="@drawable/simple_route"
+            app:backgroundTint="@color/sepex_red"
+            app:fabSize="mini"
+            app:tint="@color/on_primary" />
+
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

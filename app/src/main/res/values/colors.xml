@@ -9,6 +9,8 @@
     <color name="sepex_red">#DC2626</color>
     <color name="sepex_light_blue">#3B82F6</color>
     <color name="sepex_light_red">#EF4444</color>
+    <color name="sepex_blue_light">#E0E7FF</color>
+    <color name="sepex_red_light">#FEE2E2</color>
     
     <!-- Modern Color Palette with SEPEX branding -->
     <color name="primary">#1E3A8A</color>

@@ -5,7 +5,8 @@ public enum ApiService {
     USERS("https://users.sepex.io/"),
     ROUTES("https://routes.sepex.io/"),
     SHIPMENTS("https://shipments.sepex.io/"),
-    CHECKPOINTS("https://checkpoints.sepex.io/");
+    CHECKPOINTS("https://checkpoints.sepex.io/"),
+    ROUTING("http://localhost:5280/");
 
     private final String baseUrl;
 
