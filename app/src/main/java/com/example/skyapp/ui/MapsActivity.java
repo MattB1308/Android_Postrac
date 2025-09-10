@@ -12,12 +12,14 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 
 import com.example.skyapp.LoadingActivity;
 import com.example.skyapp.R;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.skyapp.bo.login.BO_response;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -80,10 +82,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        Button btnProfile = findViewById(R.id.btn_profile);
-        Button btnShipment = findViewById(R.id.btn_shipment);
-        Button btnRoute = findViewById(R.id.btn_route);
-        Button btnCheckpoint = findViewById(R.id.btn_checkpoint);
+        LinearLayout btnProfile = findViewById(R.id.btn_profile);
+        LinearLayout btnShipment = findViewById(R.id.btn_shipment);
+        LinearLayout btnRoute = findViewById(R.id.btn_route);
+        LinearLayout btnCheckpoint = findViewById(R.id.btn_checkpoint);
+        FloatingActionButton fabLocation = findViewById(R.id.fab_location);
 
         // Set click listeners with loading screens
         btnProfile.setOnClickListener(v -> {
@@ -91,7 +94,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 this,
                 getString(R.string.loading_profile_message),
                 ProfileActivity.class,
-                2500
+                1500
             );
             startActivity(loadingIntent);
         });
@@ -124,6 +127,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 3200
             );
             startActivity(loadingIntent);
+        });
+
+        // Set click listener for location FAB
+        fabLocation.setOnClickListener(v -> {
+            getCurrentLocation();
         });
 
     }
