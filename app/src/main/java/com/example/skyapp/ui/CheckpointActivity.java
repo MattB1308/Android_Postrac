@@ -44,7 +44,6 @@ public class CheckpointActivity extends AppCompatActivity {
     private MaterialButton btnViewAll;
     private MaterialButton btnCreateNew;
     private MaterialButton btnSearch;
-    private MaterialButton btnBackToMaps;
     private MaterialButton btnUpdateCheckpoint;
     
     // Tracking input components
@@ -105,7 +104,6 @@ public class CheckpointActivity extends AppCompatActivity {
         btnViewAll = findViewById(R.id.btnViewAll);
         btnCreateNew = findViewById(R.id.btnCreateNew);
         btnSearch = findViewById(R.id.btnSearch);
-        btnBackToMaps = findViewById(R.id.btnBackToMaps);
         btnUpdateCheckpoint = findViewById(R.id.btnUpdateCheckpoint);
         
         // Tracking input components
@@ -164,12 +162,9 @@ public class CheckpointActivity extends AppCompatActivity {
         });
 
         // Back to Maps functionality
-        btnBackToMaps.setOnClickListener(v -> {
-            Intent intent = new Intent(this, MapsActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        });
+        // Setup navigation
+        NavigationHelper.setupNavigation(this, CheckpointActivity.class);
+        NavigationHelper.highlightCurrentSection(this, CheckpointActivity.class);
     }
     
     private void loadLoginData() {

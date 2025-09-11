@@ -335,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
                             context,
                             context.getString(R.string.loading_login_message),
                             MapsActivity.class,
-                            2000  // 4 seconds loading time
+                            1000  // 4 seconds loading time
                         );
                         loadingIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         context.startActivity(loadingIntent);

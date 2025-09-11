@@ -81,6 +81,10 @@ public class ProfileActivity extends AppCompatActivity {
         btnRetry.setOnClickListener(v -> loadUserProfile());
         btnRefreshProfile.setOnClickListener(v -> loadUserProfile());
         btnBack.setOnClickListener(v -> finish());
+        
+        // Setup navigation
+        NavigationHelper.setupNavigation(this, ProfileActivity.class);
+        NavigationHelper.highlightCurrentSection(this, ProfileActivity.class);
     }
 
     private void loadLoginData() {

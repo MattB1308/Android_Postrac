@@ -21,7 +21,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/surface"
         android:elevation="4dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:fitsSystemWindows="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -312,7 +312,20 @@
                     android:id="@+id/btnShowNext10"
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
+                    android:layout_marginEnd="4dp"
                     android:text="10"
+                    android:textSize="12sp"
+                    app:backgroundTint="@null"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="@color/sepex_blue"
+                    app:strokeWidth="1dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShowNext20"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="20"
                     android:textSize="12sp"
                     app:backgroundTint="@null"
                     app:cornerRadius="8dp"
@@ -342,20 +355,31 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_margin="16dp"
-        android:layout_marginTop="72dp"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginEnd="16dp"
         android:orientation="vertical">
 
-        <!-- Location FAB -->
+        <!-- User Location FAB -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_location"
+            android:id="@+id/fab_user_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:contentDescription="My Location"
+            android:contentDescription="My Current Location"
             android:src="@drawable/map_point"
             app:backgroundTint="@color/sepex_blue"
+            app:fabSize="mini"
+            app:tint="@color/on_primary" />
+
+        <!-- Route Origin FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_route_origin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Route Origin"
+            android:src="@drawable/simple_route"
+            app:backgroundTint="@color/sepex_red"
             app:fabSize="mini"
             app:tint="@color/on_primary" />
 

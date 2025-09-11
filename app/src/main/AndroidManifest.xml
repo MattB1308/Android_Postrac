@@ -30,9 +30,6 @@
             android:name=".ui.CheckpointActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.RouteActivity"
-            android:exported="false" />
-        <activity
             android:name=".ui.ShipmentsActivity"
             android:exported="false" />
         <activity

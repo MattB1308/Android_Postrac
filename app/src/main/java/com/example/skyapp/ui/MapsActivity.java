@@ -42,6 +42,7 @@ import com.google.gson.Gson;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -62,10 +63,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     
     // Route Filter Controls
     private MaterialCardView routeFilterCard;
-    private MaterialButton btnShowNext1, btnShowNext5, btnShowNext10;
+    private MaterialButton btnShowNext1, btnShowNext5, btnShowNext10, btnShowNext20;
     private MaterialButton btnLoadRoutes;
     private FloatingActionButton fabFilter;
-    private FloatingActionButton fabLocation;
+    private FloatingActionButton fabUserLocation;
+    private FloatingActionButton fabRouteOrigin;
     
     // Data
     private String accessToken;
@@ -108,66 +110,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         btnShowNext1 = findViewById(R.id.btnShowNext1);
         btnShowNext5 = findViewById(R.id.btnShowNext5);
         btnShowNext10 = findViewById(R.id.btnShowNext10);
+        btnShowNext20 = findViewById(R.id.btnShowNext20);
         btnLoadRoutes = findViewById(R.id.btnLoadRoutes);
         fabFilter = findViewById(R.id.fab_filter);
-        fabLocation = findViewById(R.id.fab_location);
+        fabUserLocation = findViewById(R.id.fab_user_location);
+        fabRouteOrigin = findViewById(R.id.fab_route_origin);
     }
 
     private void setupClickListeners() {
-        // Navigation buttons
-        LinearLayout btnProfile = findViewById(R.id.btn_profile);
-        LinearLayout btnShipment = findViewById(R.id.btn_shipment);
-        LinearLayout btnRoute = findViewById(R.id.btn_route);
-        LinearLayout btnCheckpoint = findViewById(R.id.btn_checkpoint);
-
-        btnProfile.setOnClickListener(v -> {
-            Intent loadingIntent = LoadingActivity.createIntent(
-                this,
-                getString(R.string.loading_profile_message),
-                ProfileActivity.class,
-                1500
-            );
-            startActivity(loadingIntent);
-        });
-
-        btnShipment.setOnClickListener(v -> {
-            Intent loadingIntent = LoadingActivity.createIntent(
-                this,
-                getString(R.string.loading_shipments_message),
-                ShipmentsActivity.class,
-                3000
-            );
-            startActivity(loadingIntent);
-        });
-
-        btnRoute.setOnClickListener(v -> {
-            Intent loadingIntent = LoadingActivity.createIntent(
-                this,
-                getString(R.string.loading_routes_message),
-                RouteActivity.class,
-                2800
-            );
-            startActivity(loadingIntent);
-        });
-
-        btnCheckpoint.setOnClickListener(v -> {
-            Intent loadingIntent = LoadingActivity.createIntent(
-                this,
-                getString(R.string.loading_checkpoints_message),
-                CheckpointActivity.class,
-                3200
-            );
-            startActivity(loadingIntent);
-        });
+        // Setup navigation
+        NavigationHelper.setupNavigation(this, MapsActivity.class);
+        NavigationHelper.highlightCurrentSection(this, MapsActivity.class);
 
         // FAB listeners
-        fabLocation.setOnClickListener(v -> getCurrentLocation());
+        fabUserLocation.setOnClickListener(v -> getCurrentLocation());
+        fabRouteOrigin.setOnClickListener(v -> centerOnRoute());
         fabFilter.setOnClickListener(v -> toggleFilterCard());
 
         // Filter buttons
         btnShowNext1.setOnClickListener(v -> setFilterPoints(1));
         btnShowNext5.setOnClickListener(v -> setFilterPoints(5));
         btnShowNext10.setOnClickListener(v -> setFilterPoints(10));
+        btnShowNext20.setOnClickListener(v -> setFilterPoints(20));
         btnLoadRoutes.setOnClickListener(v -> loadDeliveryRoutes());
     }
 
@@ -210,9 +174,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         mMap.setMyLocationEnabled(true);
 
-        // Obtener la ubicación actual
-        getCurrentLocation();
-        
         // Show filter card initially
         routeFilterCard.setVisibility(View.VISIBLE);
         filterCardVisible = true;
@@ -239,6 +200,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
                     }
                 });
+    }
+
+    /**
+     * Center map on the route origin (initialPoint) or current loaded route
+     */
+    private void centerOnRoute() {
+        if (mMap == null) {
+            Toast.makeText(this, "Map not ready", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!currentRoutePoints.isEmpty()) {
+            // Focus on the first point (origin/initialPoint)
+            com.example.skyapp.bo.routing.BO_response.RoutePoint firstPoint = currentRoutePoints.get(0);
+            com.example.skyapp.bo.routing.BO_response.GeoRef geoRef = firstPoint.getGeoRef();
+            
+            if (geoRef != null) {
+                LatLng originLocation = new LatLng(geoRef.getLatitude(), geoRef.getLongitude());
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 15));
+                Toast.makeText(this, "Centered on route origin", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Centered map on route origin: " + originLocation);
+            } else {
+                Toast.makeText(this, "Origin location not available", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // Fall back to device location if no route is loaded
+            getCurrentLocation();
+            Toast.makeText(this, "No route loaded, showing device location", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -296,6 +286,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             case 10:
                 selectedButton = btnShowNext10;
                 break;
+            case 20:
+                selectedButton = btnShowNext20;
+                break;
             default:
                 selectedButton = btnShowNext1;
                 break;
@@ -309,7 +302,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * Reset all filter buttons to outlined style
      */
     private void resetFilterButtons() {
-        MaterialButton[] buttons = {btnShowNext1, btnShowNext5, btnShowNext10};
+        MaterialButton[] buttons = {btnShowNext1, btnShowNext5, btnShowNext10, btnShowNext20};
         for (MaterialButton button : buttons) {
             button.setBackgroundTintList(null);
         }
@@ -319,7 +312,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * Load delivery routes from API
      */
     private void loadDeliveryRoutes() {
+        Log.d(TAG, "Starting loadDeliveryRoutes()");
+        
         if (accessToken == null || userUuid == null) {
+            Log.e(TAG, "Missing login data - accessToken: " + (accessToken != null ? "present" : "null") + 
+                      ", userUuid: " + (userUuid != null ? "present" : "null"));
             Toast.makeText(this, "Login data not available", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -337,10 +334,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         
         BO_request.DeliveryRouteRequest request = new BO_request.DeliveryRouteRequest(userInfo, userId, currentDate);
 
+        Log.d(TAG, "Request created - UserId: " + userId + ", Date: " + currentDate);
+        Log.d(TAG, "Using API service: " + ApiService.ROUTING.name() + " - " + ApiService.ROUTING.getBaseUrl());
+
         // Create API service
         RoutingInterface apiService = client.createService(this, ApiService.ROUTING, RoutingInterface.class);
 
-        // Make API call
+        // Make API call (Authorization header will be added by AuthInterceptor)
         Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call = 
             apiService.getDeliveryRouteByUserAndDate("Bearer " + accessToken, request);
 
@@ -349,24 +349,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onResponse(Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call, 
                                  Response<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> response) {
                 
+                Log.d(TAG, "DeliveryRoute API Response - Code: " + response.code() + ", URL: " + call.request().url());
+                
                 if (response.isSuccessful() && response.body() != null) {
                     List<com.example.skyapp.bo.routing.BO_response.Route> routes = response.body().getRoutes();
+                    Log.d(TAG, "Received " + (routes != null ? routes.size() : 0) + " routes");
+                    
                     if (routes != null && !routes.isEmpty()) {
                         // Load details for the first route
+                        Log.d(TAG, "Loading details for route ID: " + routes.get(0).getRouteId());
                         loadRouteDetails(routes.get(0).getRouteId(), userInfo);
                     } else {
                         Toast.makeText(MapsActivity.this, "No routes found for today", Toast.LENGTH_SHORT).show();
+                        Log.w(TAG, "No routes returned from API");
                     }
                 } else {
-                    Toast.makeText(MapsActivity.this, "Failed to load routes", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "API Error: " + response.code());
+                    String errorMsg = "Failed to load routes - Response code: " + response.code();
+                    Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, errorMsg);
+                    try {
+                        if (response.errorBody() != null) {
+                            Log.e(TAG, "Error body: " + response.errorBody().string());
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error reading error body", e);
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call, Throwable t) {
-                Toast.makeText(MapsActivity.this, "Network error loading routes", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "API Call failed", t);
+                String errorMsg = "Network error loading routes: " + t.getMessage();
+                Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                Log.e(TAG, "DeliveryRoute API Call failed for URL: " + call.request().url(), t);
             }
         });
     }
@@ -386,18 +401,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onResponse(Call<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> call,
                                  Response<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> response) {
                 
+                Log.d(TAG, "RouteDetails API Response - Code: " + response.code() + ", URL: " + call.request().url());
+                
                 if (response.isSuccessful() && response.body() != null) {
+                    Log.d(TAG, "Successfully received route details");
                     processRouteDetails(response.body());
                 } else {
-                    Toast.makeText(MapsActivity.this, "Failed to load route details", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Route Details API Error: " + response.code());
+                    String errorMsg = "Failed to load route details - Response code: " + response.code();
+                    Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, errorMsg);
+                    try {
+                        if (response.errorBody() != null) {
+                            Log.e(TAG, "Route Details Error body: " + response.errorBody().string());
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error reading route details error body", e);
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> call, Throwable t) {
-                Toast.makeText(MapsActivity.this, "Network error loading route details", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Route Details API Call failed", t);
+                String errorMsg = "Network error loading route details: " + t.getMessage();
+                Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                Log.e(TAG, "RouteDetails API Call failed for URL: " + call.request().url(), t);
             }
         });
     }
@@ -416,22 +443,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // Clear previous route points
                 currentRoutePoints.clear();
                 
-                // Add initial point
+                // Add initial point as the origin (point 0)
                 if (mainInfo.getInitialPoint() != null) {
                     currentRoutePoints.add(mainInfo.getInitialPoint());
+                    Log.d(TAG, "Added initial point as origin (0)");
                 }
                 
-                // Add route points (these are ordered by priority)
+                // Add route points and sort them by routePointId to maintain order
                 if (mainInfo.getRoutePoints() != null) {
-                    currentRoutePoints.addAll(mainInfo.getRoutePoints());
+                    List<com.example.skyapp.bo.routing.BO_response.RoutePoint> sortedPoints = 
+                        new ArrayList<>(mainInfo.getRoutePoints());
+                    
+                    // Sort by deliveryOrder to maintain API-optimized delivery sequence
+                    sortedPoints.sort((p1, p2) -> {
+                        Integer order1 = p1.getDeliveryOrder();
+                        Integer order2 = p2.getDeliveryOrder();
+                        if (order1 == null) order1 = Integer.MAX_VALUE;
+                        if (order2 == null) order2 = Integer.MAX_VALUE;
+                        return order1.compareTo(order2);
+                    });
+                    
+                    currentRoutePoints.addAll(sortedPoints);
+                    Log.d(TAG, "Added " + sortedPoints.size() + " sorted route points");
                 }
                 
-                // Add end point
+                // Add end point as the final destination
                 if (mainInfo.getEndPoint() != null) {
                     currentRoutePoints.add(mainInfo.getEndPoint());
+                    Log.d(TAG, "Added end point as final destination");
                 }
                 
-                Log.d(TAG, "Loaded " + currentRoutePoints.size() + " route points");
+                Log.d(TAG, "Total route points loaded: " + currentRoutePoints.size());
                 
                 // Display filtered routes on map
                 displayFilteredRoutes();
@@ -513,36 +555,62 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (geoRef != null) {
                 LatLng position = new LatLng(geoRef.getLatitude(), geoRef.getLongitude());
                 
-                // Create marker options
+                // Determine point number for display
+                String pointNumber;
+                String pointTitle;
+                
+                if (i == 0) {
+                    // Origin point
+                    pointNumber = "0";
+                    pointTitle = "Origin - " + (point.getConsignee() != null ? point.getConsignee().getName() : "Starting Point");
+                } else {
+                    // Use deliveryOrder if available, otherwise use sequence number
+                    Integer deliveryOrder = point.getDeliveryOrder();
+                    if (deliveryOrder != null) {
+                        pointNumber = deliveryOrder.toString();
+                    } else {
+                        pointNumber = String.valueOf(i);
+                    }
+                    pointTitle = "Point " + pointNumber + " - " + (point.getConsignee() != null ? point.getConsignee().getName() : "Delivery Point");
+                }
+                
+                // Create marker options with point number in title
                 MarkerOptions markerOptions = new MarkerOptions()
                     .position(position)
-                    .title(point.getConsignee() != null ? point.getConsignee().getName() : "Delivery Point");
+                    .title(pointTitle);
                 
                 // Set different colors/icons for different points
                 if (i == 0) {
                     // Starting point - Green
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                 } else if (i == points.size() - 1 && points.size() > 1) {
-                    // End point - Red
+                    // End point - Red  
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
                 } else {
                     // Delivery points - Blue
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
                 }
                 
-                // Add info about packages at this point
+                // Add detailed info about packages at this point
+                StringBuilder infoBuilder = new StringBuilder();
+                infoBuilder.append("Point ").append(pointNumber).append("\n");
+                
                 if (point.getRoutePointData() != null && !point.getRoutePointData().isEmpty()) {
-                    StringBuilder infoBuilder = new StringBuilder();
-                    infoBuilder.append("Packages: ");
+                    infoBuilder.append("Packages (").append(point.getRoutePointData().size()).append("):\n");
                     for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : point.getRoutePointData()) {
-                        infoBuilder.append(packageData.getTrackingNumber()).append(" (")
-                                   .append(packageData.getDeliveryStatusDescription()).append("), ");
+                        infoBuilder.append("• ").append(packageData.getTrackingNumber())
+                                   .append(" (").append(packageData.getDeliveryStatusDescription()).append(")\n");
                     }
-                    markerOptions.snippet(infoBuilder.toString());
+                } else {
+                    infoBuilder.append("No packages at this point");
                 }
+                
+                markerOptions.snippet(infoBuilder.toString());
                 
                 Marker marker = mMap.addMarker(markerOptions);
                 routeMarkers.add(marker);
+                
+                Log.d(TAG, "Added marker " + pointNumber + " at: " + position);
             }
         }
     }
@@ -555,19 +623,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
 
+        // Create a dashed pattern: 20px dash, 10px gap
+        List<com.google.android.gms.maps.model.PatternItem> pattern = Arrays.asList(
+            new com.google.android.gms.maps.model.Dash(20), 
+            new com.google.android.gms.maps.model.Gap(10)
+        );
+
         PolylineOptions polylineOptions = new PolylineOptions()
-            .width(5)
-            .color(Color.BLUE)
-            .geodesic(true);
+            .width(6)
+            .color(Color.parseColor("#2196F3")) // Material Blue
+            .geodesic(true)
+            .pattern(pattern); // Apply dashed pattern
 
         for (com.example.skyapp.bo.routing.BO_response.RoutePoint point : points) {
             com.example.skyapp.bo.routing.BO_response.GeoRef geoRef = point.getGeoRef();
             if (geoRef != null) {
-                polylineOptions.add(new LatLng(geoRef.getLatitude(), geoRef.getLongitude()));
+                LatLng position = new LatLng(geoRef.getLatitude(), geoRef.getLongitude());
+                polylineOptions.add(position);
+                Log.d(TAG, "Added route line point: " + position);
             }
         }
 
         mMap.addPolyline(polylineOptions);
+        Log.d(TAG, "Drew dashed route line connecting " + points.size() + " points");
     }
 
 }

@@ -47,6 +47,7 @@ public class ClientManager {
      */
     private Retrofit createClient(ApiService service) {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(new LoggingInterceptor())
                 .addInterceptor(new AuthInterceptor(context))
                 .build();
 

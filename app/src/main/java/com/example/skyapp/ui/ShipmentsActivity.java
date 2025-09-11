@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,7 +45,6 @@ public class ShipmentsActivity extends AppCompatActivity {
     private MaterialButton btnTrackShipments;
     private MaterialButton btnCreateShipment;
     private MaterialButton btnViewReports;
-    private MaterialButton btnBackToMaps;
     private RecyclerView recyclerViewPackages;
     private TextView txtTotalPackages, txtInTransitPackages, txtDeliveredPackages;
     private MaterialCardView statsCard;
@@ -55,6 +55,13 @@ public class ShipmentsActivity extends AppCompatActivity {
     private String userUuid;
     private List<com.example.skyapp.bo.routing.BO_response.RoutePointData> allPackages;
     private PackageAdapter packageAdapter;
+    
+    // Enhanced package data class to include consignee information
+    private static class EnhancedPackageData {
+        com.example.skyapp.bo.routing.BO_response.RoutePointData packageData;
+        com.example.skyapp.bo.routing.BO_response.Consignee consignee;
+        Integer deliveryOrder;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +86,6 @@ public class ShipmentsActivity extends AppCompatActivity {
         btnTrackShipments = findViewById(R.id.btnTrackShipments);
         btnCreateShipment = findViewById(R.id.btnCreateShipment);
         btnViewReports = findViewById(R.id.btnViewReports);
-        btnBackToMaps = findViewById(R.id.btnBackToMaps);
         
         // Stats TextViews
         txtTotalPackages = findViewById(R.id.txtTotalPackages);
@@ -112,13 +118,9 @@ public class ShipmentsActivity extends AppCompatActivity {
             Toast.makeText(this, "Refreshing package data...", Toast.LENGTH_SHORT).show();
         });
 
-        // Back to Maps functionality
-        btnBackToMaps.setOnClickListener(v -> {
-            Intent intent = new Intent(this, MapsActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        });
+        // Setup navigation
+        NavigationHelper.setupNavigation(this, ShipmentsActivity.class);
+        NavigationHelper.highlightCurrentSection(this, ShipmentsActivity.class);
     }
     
     private void loadLoginData() {
@@ -148,7 +150,7 @@ public class ShipmentsActivity extends AppCompatActivity {
     }
     
     private void setupRecyclerView() {
-        packageAdapter = new PackageAdapter(allPackages);
+        packageAdapter = new PackageAdapter();
         recyclerViewPackages.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewPackages.setAdapter(packageAdapter);
         recyclerViewPackages.setVisibility(View.GONE);
@@ -244,22 +246,45 @@ public class ShipmentsActivity extends AppCompatActivity {
                 com.example.skyapp.bo.routing.BO_response.RouteDetail routeDetail = routes.get(0);
                 com.example.skyapp.bo.routing.BO_response.MainInfo mainInfo = routeDetail.getData().getMainInfo();
                 
-                // Collect all packages from all route points
+                // Create enhanced package data with consignee information
+                List<EnhancedPackageData> enhancedPackages = new ArrayList<>();
+                
                 if (mainInfo.getRoutePoints() != null) {
                     for (com.example.skyapp.bo.routing.BO_response.RoutePoint routePoint : mainInfo.getRoutePoints()) {
                         if (routePoint.getRoutePointData() != null) {
-                            allPackages.addAll(routePoint.getRoutePointData());
+                            for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : routePoint.getRoutePointData()) {
+                                EnhancedPackageData enhanced = new EnhancedPackageData();
+                                enhanced.packageData = packageData;
+                                enhanced.consignee = routePoint.getConsignee();
+                                enhanced.deliveryOrder = routePoint.getDeliveryOrder();
+                                enhancedPackages.add(enhanced);
+                            }
                         }
                     }
                 }
                 
-                Log.d(TAG, "Loaded " + allPackages.size() + " packages");
+                // Sort by delivery order
+                enhancedPackages.sort((p1, p2) -> {
+                    Integer order1 = p1.deliveryOrder;
+                    Integer order2 = p2.deliveryOrder;
+                    if (order1 == null) order1 = Integer.MAX_VALUE;
+                    if (order2 == null) order2 = Integer.MAX_VALUE;
+                    return order1.compareTo(order2);
+                });
                 
-                // Update UI
+                Log.d(TAG, "Loaded " + enhancedPackages.size() + " enhanced packages");
+                
+                // Update adapter with enhanced data
+                packageAdapter.updateData(enhancedPackages);
+                
+                // Update statistics with original package data for compatibility
+                for (EnhancedPackageData enhanced : enhancedPackages) {
+                    allPackages.add(enhanced.packageData);
+                }
+                
                 updateStats();
-                packageAdapter.notifyDataSetChanged();
                 
-                Toast.makeText(this, "Loaded " + allPackages.size() + " packages", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Loaded " + enhancedPackages.size() + " packages", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing package data", e);
@@ -291,27 +316,28 @@ public class ShipmentsActivity extends AppCompatActivity {
         txtDeliveredPackages.setText(String.valueOf(deliveredPackages));
     }
     
-    // Package Adapter for RecyclerView
+    // Modern Package Adapter for RecyclerView
     private static class PackageAdapter extends RecyclerView.Adapter<PackageAdapter.PackageViewHolder> {
         
-        private List<com.example.skyapp.bo.routing.BO_response.RoutePointData> packages;
+        private List<EnhancedPackageData> packages = new ArrayList<>();
         
-        public PackageAdapter(List<com.example.skyapp.bo.routing.BO_response.RoutePointData> packages) {
-            this.packages = packages;
+        public void updateData(List<EnhancedPackageData> newPackages) {
+            this.packages = newPackages;
+            notifyDataSetChanged();
         }
         
         @NonNull
         @Override
         public PackageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_package, parent, false);
+                .inflate(R.layout.item_package_modern, parent, false);
             return new PackageViewHolder(view);
         }
         
         @Override
         public void onBindViewHolder(@NonNull PackageViewHolder holder, int position) {
-            com.example.skyapp.bo.routing.BO_response.RoutePointData packageData = packages.get(position);
-            holder.bind(packageData);
+            EnhancedPackageData enhancedData = packages.get(position);
+            holder.bind(enhancedData);
         }
         
         @Override
@@ -321,27 +347,85 @@ public class ShipmentsActivity extends AppCompatActivity {
         
         static class PackageViewHolder extends RecyclerView.ViewHolder {
             
-            private TextView txtTrackingNumber, txtStatus, txtDestination, txtWeight;
+            private TextView txtTrackingNumber, txtContainer, txtCustomerName, txtAddress, txtPhone, txtDeliveryOrder;
+            private com.google.android.material.chip.Chip chipStatus;
+            private LinearLayout phoneLayout;
             
             public PackageViewHolder(@NonNull View itemView) {
                 super(itemView);
                 txtTrackingNumber = itemView.findViewById(R.id.txtTrackingNumber);
-                txtStatus = itemView.findViewById(R.id.txtStatus);
-                txtDestination = itemView.findViewById(R.id.txtDestination);
-                txtWeight = itemView.findViewById(R.id.txtWeight);
+                txtContainer = itemView.findViewById(R.id.txtContainer);
+                chipStatus = itemView.findViewById(R.id.chipStatus);
+                txtCustomerName = itemView.findViewById(R.id.txtCustomerName);
+                txtAddress = itemView.findViewById(R.id.txtAddress);
+                txtPhone = itemView.findViewById(R.id.txtPhone);
+                txtDeliveryOrder = itemView.findViewById(R.id.txtDeliveryOrder);
+                phoneLayout = itemView.findViewById(R.id.phoneLayout);
             }
             
-            public void bind(com.example.skyapp.bo.routing.BO_response.RoutePointData packageData) {
+            public void bind(EnhancedPackageData enhancedData) {
+                com.example.skyapp.bo.routing.BO_response.RoutePointData packageData = enhancedData.packageData;
+                com.example.skyapp.bo.routing.BO_response.Consignee consignee = enhancedData.consignee;
+                
+                // Package Information
                 txtTrackingNumber.setText(packageData.getTrackingNumber() != null ? 
                     packageData.getTrackingNumber() : "N/A");
+                
+                txtContainer.setText(packageData.getContainer() != null ? 
+                    "Container: " + packageData.getContainer() : "Container: N/A");
+                
+                // Status Chip
+                String status = packageData.getDeliveryStatusDescription() != null ? 
+                    packageData.getDeliveryStatusDescription() : "In Transit";
+                chipStatus.setText(status);
+                
+                // Set chip color based on status
+                if (status.toLowerCase().contains("delivered") || status.toLowerCase().contains("entregado")) {
+                    chipStatus.setChipBackgroundColorResource(R.color.sepex_green);
+                } else if (status.toLowerCase().contains("transit") || status.toLowerCase().contains("transito")) {
+                    chipStatus.setChipBackgroundColorResource(R.color.sepex_blue);
+                } else {
+                    chipStatus.setChipBackgroundColorResource(R.color.sepex_red);
+                }
+                
+                // Customer Information
+                if (consignee != null) {
+                    txtCustomerName.setText(consignee.getName() != null ? consignee.getName() : "Unknown Customer");
                     
-                txtStatus.setText(packageData.getDeliveryStatusDescription() != null ? 
-                    packageData.getDeliveryStatusDescription() : "In Transit");
+                    // Build full address
+                    StringBuilder addressBuilder = new StringBuilder();
+                    if (consignee.getAddress() != null) addressBuilder.append(consignee.getAddress());
+                    if (consignee.getCity() != null) {
+                        if (addressBuilder.length() > 0) addressBuilder.append(", ");
+                        addressBuilder.append(consignee.getCity());
+                    }
+                    if (consignee.getState() != null) {
+                        if (addressBuilder.length() > 0) addressBuilder.append(", ");
+                        addressBuilder.append(consignee.getState());
+                    }
+                    if (consignee.getZipCode() != null) {
+                        if (addressBuilder.length() > 0) addressBuilder.append(" ");
+                        addressBuilder.append(consignee.getZipCode());
+                    }
                     
-                txtDestination.setText(packageData.getContainer() != null ? 
-                    packageData.getContainer() : "Unknown");
+                    txtAddress.setText(addressBuilder.length() > 0 ? addressBuilder.toString() : "Address not available");
                     
-                txtWeight.setText("Status: " + packageData.getDeliveryStatus());
+                    // Phone number
+                    if (consignee.getPhone() != null && !consignee.getPhone().trim().isEmpty()) {
+                        txtPhone.setText(consignee.getPhone());
+                        phoneLayout.setVisibility(View.VISIBLE);
+                    } else {
+                        phoneLayout.setVisibility(View.GONE);
+                    }
+                } else {
+                    txtCustomerName.setText("Unknown Customer");
+                    txtAddress.setText("Address not available");
+                    phoneLayout.setVisibility(View.GONE);
+                }
+                
+                // Delivery Order
+                txtDeliveryOrder.setText(enhancedData.deliveryOrder != null ? 
+                    "#" + enhancedData.deliveryOrder : "#--");
             }
         }
     }
