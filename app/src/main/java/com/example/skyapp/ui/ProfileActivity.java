@@ -32,6 +32,8 @@ import java.util.Locale;
 
 public class ProfileActivity extends AppCompatActivity {
 
+    private static final String TAG = "ProfileActivity";
+    
     // UI Components
     private CircularProgressIndicator progressIndicator;
     private LinearLayout errorContainer;
@@ -200,7 +202,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
 
             showProfile();
-            Toast.makeText(this, "Profile loaded successfully", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Profile loaded successfully");
 
         } catch (Exception e) {
             Log.e("ProfileActivity", "Error displaying user data", e);

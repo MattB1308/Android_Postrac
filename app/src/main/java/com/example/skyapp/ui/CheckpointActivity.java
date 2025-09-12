@@ -6,13 +6,19 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.skyapp.R;
 import com.example.skyapp.api_config.ApiService;
@@ -20,11 +26,15 @@ import com.example.skyapp.api_config.client;
 import com.example.skyapp.api_config.routing.RoutingInterface;
 import com.example.skyapp.bo.login.BO_response;
 import com.example.skyapp.bo.routing.BO_request;
+import com.example.skyapp.realm.DeliveryPackageRealm;
+import com.example.skyapp.realm.RealmManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
+
+import androidx.appcompat.app.AlertDialog;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -60,25 +70,37 @@ public class CheckpointActivity extends AppCompatActivity {
     // Stats
     private TextView txtTotalCheckpoints, txtActiveCheckpoints, txtCompletedCheckpoints;
     
+    // Package List
+    private RecyclerView recyclerViewPackages;
+    private PackageCheckpointAdapter packageAdapter;
+    private MaterialCardView packagesListCard;
+    
     // Data
     private String accessToken;
     private int userId;
     private String userUuid;
+    private String currentRouteId;
     private List<com.example.skyapp.bo.routing.BO_response.RoutePointData> allPackages;
     private com.example.skyapp.bo.routing.BO_response.RoutePointData currentPackage;
+    private DeliveryPackageRealm currentRealmPackage;
+    private RealmManager realmManager;
     
-    // Checkpoint status options
-    private String[] checkpointStatuses = {
-        "DEL - Delivered",
-        "CNA - Could Not Access", 
-        "CNF - Could Not Find",
-        "REF - Refused",
-        "DAM - Damaged",
-        "RTS - Return to Sender",
-        "HLD - Hold",
-        "OFD - Out for Delivery",
-        "INT - In Transit",
-        "ARR - Arrived at Facility"
+    // Delivery status options for realm
+    private String[] deliveryStatuses = {
+        "0 - Pending",
+        "1 - Delivered",
+        "2 - Exception"
+    };
+    
+    private String[] exceptionReasons = {
+        "Could Not Access",
+        "Could Not Find",
+        "Refused",
+        "Damaged Package",
+        "Incorrect Address",
+        "Customer Not Home",
+        "Business Closed",
+        "Other"
     };
 
     @Override
@@ -88,13 +110,17 @@ public class CheckpointActivity extends AppCompatActivity {
 
         // Initialize data structures
         allPackages = new ArrayList<>();
+        realmManager = RealmManager.getInstance(this);
         
         // Load login data
         loadLoginData();
         
         initializeViews();
         setupClickListeners();
-        setupCheckpointStatusDropdown();
+        setupDeliveryStatusDropdown();
+        
+        // Setup RecyclerView
+        setupRecyclerView();
         
         // Load package data for tracking
         loadPackageData();
@@ -125,6 +151,10 @@ public class CheckpointActivity extends AppCompatActivity {
         txtActiveCheckpoints = findViewById(R.id.txtActiveCheckpoints);
         txtCompletedCheckpoints = findViewById(R.id.txtCompletedCheckpoints);
         
+        // Package List
+        recyclerViewPackages = findViewById(R.id.recyclerViewPackages);
+        packagesListCard = findViewById(R.id.packagesListCard);
+        
         // Initially hide package info
         packageInfoCard.setVisibility(View.GONE);
     }
@@ -142,7 +172,7 @@ public class CheckpointActivity extends AppCompatActivity {
         });
 
         btnCreateNew.setOnClickListener(v -> {
-            Toast.makeText(this, "Create New Checkpoint - Coming Soon", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Create New Checkpoint - Coming Soon");
         });
 
         // Search for tracking number  
@@ -167,6 +197,12 @@ public class CheckpointActivity extends AppCompatActivity {
         NavigationHelper.highlightCurrentSection(this, CheckpointActivity.class);
     }
     
+    private void setupRecyclerView() {
+        packageAdapter = new PackageCheckpointAdapter();
+        recyclerViewPackages.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewPackages.setAdapter(packageAdapter);
+    }
+    
     private void loadLoginData() {
         try {
             SharedPreferences sharedPreferences = getSharedPreferences("LoginInfo", Context.MODE_PRIVATE);
@@ -179,17 +215,18 @@ public class CheckpointActivity extends AppCompatActivity {
                     accessToken = loginResponse.getAccessToken();
                     userId = loginResponse.getUserId();
                     userUuid = loginResponse.getUserUuid();
+                    currentRouteId = "route_" + userId + "_" + System.currentTimeMillis() / (1000 * 60 * 60 * 24); // Daily route ID
 
                     Log.d(TAG, "Login data loaded - UserId: " + userId);
                 } else {
-                    Toast.makeText(this, "No valid response data", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "No valid response data");
                 }
             } else {
-                Toast.makeText(this, "No login data found", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "No login data found");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error loading login data", e);
-            Toast.makeText(this, "Error loading login data", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error loading login data");
         }
     }
     
@@ -197,14 +234,14 @@ public class CheckpointActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
             this, 
             android.R.layout.simple_dropdown_item_1line, 
-            checkpointStatuses
+            deliveryStatuses
         );
         actvCheckpointStatus.setAdapter(adapter);
     }
     
     private void loadPackageData() {
         if (accessToken == null || userUuid == null) {
-            Toast.makeText(this, "Login data not available", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Login data not available");
             return;
         }
 
@@ -293,6 +330,9 @@ public class CheckpointActivity extends AppCompatActivity {
                 
                 // Update stats
                 updateStats();
+                
+                // Load packages in ordered list
+                loadOrderedPackages();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing package data", e);
@@ -329,75 +369,305 @@ public class CheckpointActivity extends AppCompatActivity {
         
         tilTrackingNumber.setError(null);
         
-        // Search for the package in loaded data
-        currentPackage = null;
-        for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : allPackages) {
-            if (packageData.getTrackingNumber() != null && 
-                packageData.getTrackingNumber().equalsIgnoreCase(trackingNumber)) {
-                currentPackage = packageData;
-                break;
-            }
-        }
+        // Search for package in Realm database first
+        currentRealmPackage = realmManager.findPackageByTracking(trackingNumber);
         
-        if (currentPackage != null) {
+        if (currentRealmPackage != null) {
+            currentPackage = null; // Clear legacy package
             displayPackageInfo();
-            Toast.makeText(this, "Package found!", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Package found in Realm: " + currentRealmPackage.getConsigneeName());
         } else {
-            packageInfoCard.setVisibility(View.GONE);
-            Toast.makeText(this, "Tracking number not found in current routes", Toast.LENGTH_SHORT).show();
+            // Fallback to searching in loaded data
+            currentPackage = null;
+            for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : allPackages) {
+                if (packageData.getTrackingNumber() != null && 
+                    packageData.getTrackingNumber().equalsIgnoreCase(trackingNumber)) {
+                    currentPackage = packageData;
+                    break;
+                }
+            }
+            
+            if (currentPackage != null) {
+                displayPackageInfo();
+                Log.d(TAG, "Package found in loaded data!");
+            } else {
+                packageInfoCard.setVisibility(View.GONE);
+                Log.d(TAG, "Tracking number not found in current routes");
+            }
         }
     }
     
     private void displayPackageInfo() {
-        if (currentPackage == null) return;
-        
-        txtPackageInfo.setText("Tracking: " + currentPackage.getTrackingNumber());
-        txtDestination.setText("Container: " + (currentPackage.getContainer() != null ? 
-            currentPackage.getContainer() : "Unknown"));
-        txtCurrentStatus.setText("Status: " + (currentPackage.getDeliveryStatusDescription() != null ? 
-            currentPackage.getDeliveryStatusDescription() : "In Transit"));
-        txtLastUpdate.setText("Status Code: " + currentPackage.getDeliveryStatus());
-        
-        // Set current status in dropdown
-        if (currentPackage.getDeliveryStatusDescription() != null) {
-            String currentStatus = currentPackage.getDeliveryStatusDescription();
-            for (String status : checkpointStatuses) {
-                if (status.toLowerCase().contains(currentStatus.toLowerCase())) {
-                    actvCheckpointStatus.setText(status, false);
-                    break;
-                }
-            }
+        if (currentRealmPackage != null) {
+            // Display Realm package info
+            txtPackageInfo.setText("Tracking: " + currentRealmPackage.getTrackingNumber());
+            txtDestination.setText("Destination: " + currentRealmPackage.getConsigneeAddress());
+            txtCurrentStatus.setText("Status: " + currentRealmPackage.getDeliveryStatusText());
+            txtLastUpdate.setText("Customer: " + currentRealmPackage.getConsigneeName());
+            
+            // Set current status in dropdown
+            actvCheckpointStatus.setText(currentRealmPackage.getDeliveryStatus() + " - " + 
+                currentRealmPackage.getDeliveryStatusText(), false);
+                
+        } else if (currentPackage != null) {
+            // Fallback to display legacy package info
+            txtPackageInfo.setText("Tracking: " + currentPackage.getTrackingNumber());
+            txtDestination.setText("Container: " + (currentPackage.getContainer() != null ? 
+                currentPackage.getContainer() : "Unknown"));
+            txtCurrentStatus.setText("Status: " + (currentPackage.getDeliveryStatusDescription() != null ? 
+                currentPackage.getDeliveryStatusDescription() : "In Transit"));
+            txtLastUpdate.setText("Status Code: " + currentPackage.getDeliveryStatus());
         }
         
         packageInfoCard.setVisibility(View.VISIBLE);
     }
     
     private void updateCheckpointStatus() {
-        if (currentPackage == null) {
-            Toast.makeText(this, "Please search for a package first", Toast.LENGTH_SHORT).show();
+        if (currentRealmPackage == null && currentPackage == null) {
+            Log.d(TAG, "Please search for a package first");
             return;
         }
         
         String selectedStatus = actvCheckpointStatus.getText().toString();
         if (TextUtils.isEmpty(selectedStatus)) {
-            tilCheckpointStatus.setError("Please select a checkpoint status");
+            tilCheckpointStatus.setError("Please select a delivery status");
             return;
         }
         
         tilCheckpointStatus.setError(null);
         
-        // Extract status code (first 3 characters)
-        String statusCode = selectedStatus.length() >= 3 ? selectedStatus.substring(0, 3) : selectedStatus;
+        if (currentRealmPackage != null) {
+            // Extract status code (first digit)
+            int statusCode = -1;
+            String notes = "";
+            
+            if (selectedStatus.startsWith("0")) {
+                statusCode = 0; // Pending
+            } else if (selectedStatus.startsWith("1")) {
+                statusCode = 1; // Delivered
+                notes = "Package delivered successfully";
+            } else if (selectedStatus.startsWith("2")) {
+                statusCode = 2; // Exception
+                // Show exception reason dialog
+                showExceptionReasonDialog(currentRealmPackage.getTrackingNumber());
+                return;
+            }
+            
+            if (statusCode != -1) {
+                // Update in Realm
+                boolean updated = realmManager.updateDeliveryStatus(currentRealmPackage.getTrackingNumber(), statusCode, notes);
+                
+                if (updated) {
+                    // Refresh the package info from Realm
+                    currentRealmPackage = realmManager.findPackageByTracking(currentRealmPackage.getTrackingNumber());
+                    displayPackageInfo();
+                    updateDeliveryStats();
+                    
+                    Log.d(TAG, "Updated delivery status to: " + statusCode + " for tracking: " + currentRealmPackage.getTrackingNumber());
+                } else {
+                    Log.e(TAG, "Failed to update delivery status");
+                }
+            }
+        } else {
+            // Legacy update for non-Realm packages
+            Log.d(TAG, "Updated legacy package status");
         
-        // In a real implementation, this would make an API call to update the status
-        // For now, we'll just update locally and show a message
+            // Update the display
+            txtCurrentStatus.setText("Status: " + selectedStatus);
+            txtLastUpdate.setText("Last Update: " + new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date()));
+        }
+    }
+    
+    private void showExceptionReasonDialog(String trackingNumber) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Exception Reason")
+                .setItems(exceptionReasons, (dialog, which) -> {
+                    String reason = exceptionReasons[which];
+                    // Update with exception status and reason
+                    boolean updated = realmManager.updateDeliveryStatus(trackingNumber, 2, reason);
+                    
+                    if (updated) {
+                        // Refresh the package info from Realm
+                        currentRealmPackage = realmManager.findPackageByTracking(trackingNumber);
+                        displayPackageInfo();
+                        updateDeliveryStats();
+                        loadOrderedPackages(); // Refresh the list
+                        
+                        Log.d(TAG, "Updated delivery status to exception with reason: " + reason);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    private void setupDeliveryStatusDropdown() {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, deliveryStatuses);
+        actvCheckpointStatus.setAdapter(adapter);
+    }
+    
+    private void updateDeliveryStats() {
+        if (currentRouteId == null) return;
         
-        Toast.makeText(this, "Checkpoint updated: " + statusCode + " for " + currentPackage.getTrackingNumber(), Toast.LENGTH_LONG).show();
+        RealmManager.DeliveryStats stats = realmManager.getDeliveryStats(currentRouteId);
         
-        // Update the display
-        txtCurrentStatus.setText("Status: " + selectedStatus);
-        txtLastUpdate.setText("Last Update: " + new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date()));
+        txtTotalCheckpoints.setText(String.valueOf(stats.getTotal()));
+        txtActiveCheckpoints.setText(String.valueOf(stats.getPending()));
+        txtCompletedCheckpoints.setText(String.valueOf(stats.getDelivered() + stats.getExceptions()));
         
-        Log.d(TAG, "Updated checkpoint status to: " + statusCode + " for tracking: " + currentPackage.getTrackingNumber());
+        Log.d(TAG, "Updated delivery stats - Total: " + stats.getTotal() + 
+              ", Pending: " + stats.getPending() + 
+              ", Delivered: " + stats.getDelivered() + 
+              ", Exceptions: " + stats.getExceptions());
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (realmManager != null) {
+            realmManager.close();
+        }
+    }
+    
+    // Package Adapter for RecyclerView
+    private class PackageCheckpointAdapter extends RecyclerView.Adapter<PackageCheckpointAdapter.PackageViewHolder> {
+        
+        private List<DeliveryPackageRealm> packages = new ArrayList<>();
+        
+        public void updatePackages(List<DeliveryPackageRealm> newPackages) {
+            this.packages = newPackages;
+            notifyDataSetChanged();
+        }
+        
+        @NonNull
+        @Override
+        public PackageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_package_checkpoint, parent, false);
+            return new PackageViewHolder(view);
+        }
+        
+        @Override
+        public void onBindViewHolder(@NonNull PackageViewHolder holder, int position) {
+            DeliveryPackageRealm packageRealm = packages.get(position);
+            holder.bind(packageRealm);
+        }
+        
+        @Override
+        public int getItemCount() {
+            return packages.size();
+        }
+        
+        class PackageViewHolder extends RecyclerView.ViewHolder {
+            
+            private TextView txtTrackingNumber, txtDeliveryOrder, txtStatus, txtConsigneeName;
+            private com.google.android.material.chip.Chip chipStatus;
+            private MaterialCardView cardContainer;
+            
+            public PackageViewHolder(@NonNull View itemView) {
+                super(itemView);
+                txtTrackingNumber = itemView.findViewById(R.id.txtTrackingNumber);
+                txtDeliveryOrder = itemView.findViewById(R.id.txtDeliveryOrder);
+                txtConsigneeName = itemView.findViewById(R.id.txtConsigneeName);
+                chipStatus = itemView.findViewById(R.id.chipStatus);
+                cardContainer = itemView.findViewById(R.id.cardContainer);
+            }
+            
+            public void bind(DeliveryPackageRealm packageRealm) {
+                txtTrackingNumber.setText(packageRealm.getTrackingNumber());
+                txtDeliveryOrder.setText("Order #" + packageRealm.getDeliveryOrder());
+                txtConsigneeName.setText(packageRealm.getConsigneeName());
+                
+                // Set status chip
+                String statusText;
+                int chipColor;
+                switch (packageRealm.getDeliveryStatus()) {
+                    case 0:
+                        statusText = "Pending";
+                        chipColor = R.color.sepex_red;
+                        break;
+                    case 1:
+                        statusText = "Delivered";
+                        chipColor = R.color.sepex_green;
+                        break;
+                    case 2:
+                        statusText = "Exception";
+                        chipColor = R.color.sepex_blue;
+                        break;
+                    default:
+                        statusText = "Unknown";
+                        chipColor = R.color.sepex_blue;
+                        break;
+                }
+                
+                chipStatus.setText(statusText);
+                chipStatus.setChipBackgroundColorResource(chipColor);
+                chipStatus.setTextColor(getResources().getColor(android.R.color.white, null));
+                
+                // Set click listener for package options
+                cardContainer.setOnClickListener(v -> showPackageOptionsDialog(packageRealm));
+            }
+        }
+    }
+    
+    private void showPackageOptionsDialog(DeliveryPackageRealm packageRealm) {
+        String[] options = {"Scan Package", "Mark as Delivered", "Mark as Exception"};
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Package: " + packageRealm.getTrackingNumber())
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Scan Package
+                            scanPackage(packageRealm);
+                            break;
+                        case 1: // Mark as Delivered
+                            markAsDelivered(packageRealm);
+                            break;
+                        case 2: // Mark as Exception
+                            markAsException(packageRealm);
+                            break;
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    private void scanPackage(DeliveryPackageRealm packageRealm) {
+        Log.d(TAG, "Scan functionality for " + packageRealm.getTrackingNumber() + " - Coming Soon");
+        // TODO: Implement barcode/QR scanning
+    }
+    
+    private void markAsDelivered(DeliveryPackageRealm packageRealm) {
+        boolean updated = realmManager.updateDeliveryStatus(packageRealm.getTrackingNumber(), 1, "Delivered successfully");
+        
+        if (updated) {
+            loadOrderedPackages(); // Refresh the list
+            updateDeliveryStats();
+            Log.d(TAG, "Marked package as delivered: " + packageRealm.getTrackingNumber());
+        }
+    }
+    
+    private void markAsException(DeliveryPackageRealm packageRealm) {
+        showExceptionReasonDialog(packageRealm.getTrackingNumber());
+    }
+    
+    private void loadOrderedPackages() {
+        if (currentRouteId == null) {
+            Log.w(TAG, "No route ID available for loading packages");
+            return;
+        }
+        
+        // Get packages from Realm ordered by delivery order
+        io.realm.RealmResults<DeliveryPackageRealm> realmPackages = 
+            realmManager.getAllPackagesForRoute(currentRouteId);
+        
+        List<DeliveryPackageRealm> packagesList = new ArrayList<>();
+        for (DeliveryPackageRealm pkg : realmPackages) {
+            packagesList.add(pkg);
+        }
+        
+        // Update adapter
+        packageAdapter.updatePackages(packagesList);
+        
+        Log.d(TAG, "Loaded " + packagesList.size() + " packages ordered by delivery order");
     }
 }

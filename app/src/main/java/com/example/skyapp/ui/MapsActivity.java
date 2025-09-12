@@ -38,6 +38,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.skyapp.databinding.ActivityMapsBinding;
+import com.example.skyapp.realm.DeliveryPackageRealm;
+import com.example.skyapp.realm.RealmManager;
 import com.google.gson.Gson;
 
 import java.text.SimpleDateFormat;
@@ -68,6 +70,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private FloatingActionButton fabFilter;
     private FloatingActionButton fabUserLocation;
     private FloatingActionButton fabRouteOrigin;
+    private FloatingActionButton fabNavigate;
     
     // Data
     private String accessToken;
@@ -77,6 +80,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private List<Marker> routeMarkers;
     private int currentFilterPoints = 1; // Default: show next 1 point
     private boolean filterCardVisible = false;
+    private String currentRouteId;
+    private RealmManager realmManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +120,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fabFilter = findViewById(R.id.fab_filter);
         fabUserLocation = findViewById(R.id.fab_user_location);
         fabRouteOrigin = findViewById(R.id.fab_route_origin);
+        fabNavigate = findViewById(R.id.fab_navigate);
+        
+        // Initialize RealmManager
+        realmManager = RealmManager.getInstance(this);
     }
 
     private void setupClickListeners() {
@@ -126,6 +135,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fabUserLocation.setOnClickListener(v -> getCurrentLocation());
         fabRouteOrigin.setOnClickListener(v -> centerOnRoute());
         fabFilter.setOnClickListener(v -> toggleFilterCard());
+        fabNavigate.setOnClickListener(v -> showNavigationMenu());
 
         // Filter buttons
         btnShowNext1.setOnClickListener(v -> setFilterPoints(1));
@@ -147,17 +157,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     accessToken = loginResponse.getAccessToken();
                     userId = loginResponse.getUserId();
                     userUuid = loginResponse.getUserUuid();
+                    currentRouteId = "route_" + userId + "_" + System.currentTimeMillis() / (1000 * 60 * 60 * 24); // Daily route ID
 
                     Log.d(TAG, "Login data loaded - UserId: " + userId + ", UserUuid: " + userUuid);
                 } else {
-                    Toast.makeText(this, "No valid response data", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "No valid response data");
                 }
             } else {
-                Toast.makeText(this, "No login data found", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "No login data found");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error loading login data", e);
-            Toast.makeText(this, "Error loading login data", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error loading login data");
         }
     }
 
@@ -207,7 +218,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     private void centerOnRoute() {
         if (mMap == null) {
-            Toast.makeText(this, "Map not ready", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Map not ready");
             return;
         }
 
@@ -219,15 +230,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (geoRef != null) {
                 LatLng originLocation = new LatLng(geoRef.getLatitude(), geoRef.getLongitude());
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(originLocation, 15));
-                Toast.makeText(this, "Centered on route origin", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Centered on route origin");
                 Log.d(TAG, "Centered map on route origin: " + originLocation);
             } else {
-                Toast.makeText(this, "Origin location not available", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Origin location not available");
             }
         } else {
             // Fall back to device location if no route is loaded
             getCurrentLocation();
-            Toast.makeText(this, "No route loaded, showing device location", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "No route loaded, showing device location");
         }
     }
 
@@ -317,12 +328,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (accessToken == null || userUuid == null) {
             Log.e(TAG, "Missing login data - accessToken: " + (accessToken != null ? "present" : "null") + 
                       ", userUuid: " + (userUuid != null ? "present" : "null"));
-            Toast.makeText(this, "Login data not available", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Login data not available");
             return;
         }
 
         // Show loading
-        Toast.makeText(this, "Loading routes...", Toast.LENGTH_SHORT).show();
+        // Loading routes silently
 
         // Create request objects
         BO_request.User user = new BO_request.User(userId, userUuid);
@@ -360,12 +371,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Log.d(TAG, "Loading details for route ID: " + routes.get(0).getRouteId());
                         loadRouteDetails(routes.get(0).getRouteId(), userInfo);
                     } else {
-                        Toast.makeText(MapsActivity.this, "No routes found for today", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "No routes found for today");
                         Log.w(TAG, "No routes returned from API");
                     }
                 } else {
                     String errorMsg = "Failed to load routes - Response code: " + response.code();
-                    Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, errorMsg);
                     Log.e(TAG, errorMsg);
                     try {
                         if (response.errorBody() != null) {
@@ -380,7 +391,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onFailure(Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call, Throwable t) {
                 String errorMsg = "Network error loading routes: " + t.getMessage();
-                Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                Log.e(TAG, errorMsg);
                 Log.e(TAG, "DeliveryRoute API Call failed for URL: " + call.request().url(), t);
             }
         });
@@ -408,7 +419,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     processRouteDetails(response.body());
                 } else {
                     String errorMsg = "Failed to load route details - Response code: " + response.code();
-                    Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, errorMsg);
                     Log.e(TAG, errorMsg);
                     try {
                         if (response.errorBody() != null) {
@@ -423,7 +434,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onFailure(Call<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> call, Throwable t) {
                 String errorMsg = "Network error loading route details: " + t.getMessage();
-                Toast.makeText(MapsActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                Log.e(TAG, errorMsg);
                 Log.e(TAG, "RouteDetails API Call failed for URL: " + call.request().url(), t);
             }
         });
@@ -478,11 +489,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // Display filtered routes on map
                 displayFilteredRoutes();
                 
-                Toast.makeText(this, "Route loaded: " + mainInfo.getHubRoute(), Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Route loaded: " + mainInfo.getHubRoute());
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing route details", e);
-            Toast.makeText(this, "Error processing route data", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error processing route data");
         }
     }
 
@@ -646,6 +657,108 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.addPolyline(polylineOptions);
         Log.d(TAG, "Drew dashed route line connecting " + points.size() + " points");
+    }
+
+    /**
+     * Show navigation menu to select app (Google Maps, Waze, Here We Go)
+     */
+    private void showNavigationMenu() {
+        if (currentRouteId == null) {
+            Log.d(TAG, "No route ID available");
+            return;
+        }
+        
+        // Get next pending delivery from Realm
+        DeliveryPackageRealm nextPackage = realmManager.getNextPendingDelivery(currentRouteId);
+        
+        if (nextPackage != null) {
+            Log.d(TAG, "Found next delivery: " + nextPackage.getConsigneeName() + " at " + nextPackage.getConsigneeAddress());
+            
+            // Get current location and then show navigation options
+            getCurrentLocationForNavigation(nextPackage);
+        } else {
+            Log.d(TAG, "No pending deliveries found");
+            // Try to get next delivery from current route points
+            getNextDeliveryFromRoutePoints();
+        }
+    }
+
+    /**
+     * Get current location for navigation purposes
+     */
+    private void getCurrentLocationForNavigation(DeliveryPackageRealm nextPackage) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            return;
+        }
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    if (location != null) {
+                        // Use NavigationHelper to show app selection dialog
+                        com.example.skyapp.utils.NavigationHelper.showNavigationDialog(
+                            this,
+                            nextPackage.getLatitude(),
+                            nextPackage.getLongitude(),
+                            nextPackage.getConsigneeAddress()
+                        );
+                        Log.d(TAG, "Showing navigation menu from current location to: " + nextPackage.getConsigneeAddress());
+                    } else {
+                        Log.w(TAG, "Could not get current location");
+                        // Still show navigation dialog without current location optimization
+                        com.example.skyapp.utils.NavigationHelper.showNavigationDialog(
+                            this,
+                            nextPackage.getLatitude(),
+                            nextPackage.getLongitude(),
+                            nextPackage.getConsigneeAddress()
+                        );
+                    }
+                });
+    }
+
+    /**
+     * Get next delivery from route points if Realm doesn't have data
+     */
+    private void getNextDeliveryFromRoutePoints() {
+        if (currentRoutePoints.isEmpty()) {
+            Log.d(TAG, "No route points available - load routes first");
+            return;
+        }
+
+        // Find first route point with packages in pending status
+        for (com.example.skyapp.bo.routing.BO_response.RoutePoint point : currentRoutePoints) {
+            if (point.getRoutePointData() != null && !point.getRoutePointData().isEmpty()) {
+                // Check if any package is in pending status (0)
+                for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : point.getRoutePointData()) {
+                    if (packageData.getDeliveryStatus() == 0) { // Pending
+                        // Found a pending package, use this point for navigation
+                        if (point.getGeoRef() != null && point.getConsignee() != null) {
+                            com.example.skyapp.utils.NavigationHelper.showNavigationDialog(
+                                this,
+                                point.getGeoRef().getLatitude(),
+                                point.getGeoRef().getLongitude(),
+                                point.getConsignee().getAddress()
+                            );
+                            Log.d(TAG, "Navigating to next pending delivery: " + point.getConsignee().getName());
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // No pending deliveries found
+        Log.d(TAG, "All deliveries completed or no deliveries available");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (realmManager != null) {
+            realmManager.close();
+        }
     }
 
 }

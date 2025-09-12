@@ -112,17 +112,34 @@
 
     </LinearLayout>
 
-    <!-- Bottom Branding -->
-    <TextView
+    <!-- Bottom Branding - Powered by StudioMist -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:text="StudioMist"
-        android:textColor="@color/on_surface_variant"
-        android:textSize="12sp"
-        android:alpha="0.7"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Powered by: "
+            android:textColor="@color/on_surface_variant"
+            android:textSize="12sp"
+            android:alpha="0.7"
+            android:layout_marginEnd="8dp" />
+
+        <ImageView
+            android:layout_width="140dp"
+            android:layout_height="48dp"
+            android:alpha="0.7"
+            android:contentDescription="StudioMist Logo"
+            android:scaleType="centerInside"
+            android:src="@drawable/studio_mist" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

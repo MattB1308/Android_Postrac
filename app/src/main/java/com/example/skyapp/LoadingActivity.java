@@ -25,7 +25,7 @@ public class LoadingActivity extends AppCompatActivity {
     public static final String EXTRA_SHOW_PERCENTAGE = "show_percentage";
 
     // Default values
-    private static final int DEFAULT_LOADING_DURATION = 1500; // 3 seconds
+    private static final int DEFAULT_LOADING_DURATION = 500; // 0.5 seconds
     private static final String DEFAULT_MESSAGE = "Loading...";
 
     // UI components

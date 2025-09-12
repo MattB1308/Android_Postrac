@@ -47,9 +47,13 @@
     <color name="google_blue">#4285F4</color>
     <color name="microsoft_blue">#0078D4</color>
     
+    <!-- New button colors for UI improvements -->
+    <color name="light_blue">#87CEEB</color>
+    <color name="button_gray">#6B7280</color>
+    
     <!-- Legacy colors for compatibility -->
-    <color name="colorPrimary">#6750A4</color>
-    <color name="colorPrimaryVariant">#21005D</color>
-    <color name="colorSecondary">#625B71</color>
+    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimaryVariant">#FFFFFF</color>
+    <color name="colorSecondary">#FFFFFF</color>
 
 </resources>

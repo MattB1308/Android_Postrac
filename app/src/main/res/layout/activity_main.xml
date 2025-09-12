@@ -11,84 +11,6 @@
         android:layout_height="match_parent"
         android:padding="24dp">
 
-        <!-- Decorative Background Circles -->
-        <!-- Large blue circle - top right -->
-        <View
-            android:id="@+id/decorativeCircleBlue1"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="-50dp"
-            android:layout_marginEnd="-50dp"
-            android:alpha="0.3"
-            android:background="@drawable/decorative_circle_blue_gradient"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Medium red circle - middle left -->
-        <View
-            android:id="@+id/decorativeCircleRed1"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_marginStart="-40dp"
-            android:alpha="0.25"
-            android:background="@drawable/decorative_circle_red_gradient"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Small blue circle - bottom right -->
-        <View
-            android:id="@+id/decorativeCircleBlue2"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:layout_marginEnd="-30dp"
-            android:layout_marginBottom="-30dp"
-            android:alpha="0.2"
-            android:background="@drawable/decorative_circle_blue_gradient"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <!-- Small red circle - top left -->
-        <View
-            android:id="@+id/decorativeCircleRed2"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginStart="-20dp"
-            android:layout_marginTop="-20dp"
-            android:alpha="0.15"
-            android:background="@drawable/decorative_circle_red_gradient"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Logo Container with Enhanced Design -->
-        <FrameLayout
-            android:id="@+id/logoContainer"
-            android:layout_width="160dp"
-            android:layout_height="160dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/loginCard"
-            app:layout_constraintVertical_chainStyle="packed">
-
-            <!-- Logo Background with Elevation -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/logo_container_elevated" />
-
-            <!-- SEPEX Logo -->
-            <ImageView
-                android:id="@+id/ivLogo"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center"
-                android:contentDescription="@string/content_desc_sepex_logo"
-                android:scaleType="centerInside"
-                android:src="@drawable/sepex_logo"
-                android:elevation="4dp" />
-
-        </FrameLayout>
 
         <!-- Main Login Card -->
         <com.google.android.material.card.MaterialCardView
@@ -101,7 +23,7 @@
             app:cardElevation="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/logoContainer"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <LinearLayout
@@ -110,26 +32,16 @@
                 android:orientation="vertical"
                 android:padding="32dp">
 
-                <!-- Welcome Text -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/login_welcome_title"
-                    android:textColor="@color/on_surface"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-medium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
+                <!-- SEPEX Logo -->
+                <ImageView
+                    android:id="@+id/ivSepexLogo"
+                    android:layout_width="120dp"
+                    android:layout_height="60dp"
+                    android:layout_gravity="center"
                     android:layout_marginBottom="32dp"
-                    android:text="@string/login_welcome_subtitle"
-                    android:textColor="@color/login_text_secondary"
-                    android:textSize="16sp" />
+                    android:contentDescription="@string/content_desc_sepex_logo"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/sepex_logo" />
 
                 <!-- Social Login Buttons -->
                 <com.google.android.material.button.MaterialButton
@@ -284,6 +196,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:layout_marginBottom="24dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true"
@@ -291,6 +204,31 @@
                     android:text="@string/login_no_account"
                     android:textColor="@color/login_text_secondary"
                     android:textSize="14sp" />
+
+                <!-- Powered by StudioMist -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Powered by: "
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="8dp" />
+
+                    <ImageView
+                        android:layout_width="120dp"
+                        android:layout_height="40dp"
+                        android:contentDescription="StudioMist Logo"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/studio_mist" />
+
+                </LinearLayout>
 
             </LinearLayout>
 

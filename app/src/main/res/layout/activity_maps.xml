@@ -301,12 +301,10 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="4dp"
                     android:text="5"
+                    android:textColor="@color/sepex_blue"
                     android:textSize="12sp"
-                    app:backgroundTint="@null"
-                    app:cornerRadius="8dp"
-                    app:strokeColor="@color/sepex_blue"
-                    app:strokeWidth="1dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    app:backgroundTint="@color/surface_variant"
+                    app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShowNext10"
@@ -314,24 +312,20 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="4dp"
                     android:text="10"
+                    android:textColor="@color/sepex_blue"
                     android:textSize="12sp"
-                    app:backgroundTint="@null"
-                    app:cornerRadius="8dp"
-                    app:strokeColor="@color/sepex_blue"
-                    app:strokeWidth="1dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    app:backgroundTint="@color/surface_variant"
+                    app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShowNext20"
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
                     android:text="20"
+                    android:textColor="@color/sepex_blue"
                     android:textSize="12sp"
-                    app:backgroundTint="@null"
-                    app:cornerRadius="8dp"
-                    app:strokeColor="@color/sepex_blue"
-                    app:strokeWidth="1dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    app:backgroundTint="@color/surface_variant"
+                    app:cornerRadius="8dp" />
 
             </LinearLayout>
 
@@ -344,7 +338,7 @@
                 android:text="Load Routes"
                 android:textAllCaps="false"
                 android:textSize="12sp"
-                app:backgroundTint="@color/sepex_red"
+                app:backgroundTint="@color/light_blue"
                 app:cornerRadius="8dp" />
 
         </LinearLayout>
@@ -379,7 +373,7 @@
             android:layout_marginBottom="8dp"
             android:contentDescription="Route Origin"
             android:src="@drawable/simple_route"
-            app:backgroundTint="@color/sepex_red"
+            app:backgroundTint="@color/light_blue"
             app:fabSize="mini"
             app:tint="@color/on_primary" />
 
@@ -388,10 +382,22 @@
             android:id="@+id/fab_filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:contentDescription="Route Filter"
             android:src="@drawable/simple_route"
-            app:backgroundTint="@color/sepex_red"
+            app:backgroundTint="@color/light_blue"
             app:fabSize="mini"
+            app:tint="@color/on_primary" />
+
+        <!-- Navigate to Next Delivery FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_navigate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Navigate to Next Delivery"
+            android:src="@android:drawable/ic_dialog_map"
+            app:backgroundTint="@color/sepex_green"
+            app:fabSize="normal"
             app:tint="@color/on_primary" />
 
     </LinearLayout>

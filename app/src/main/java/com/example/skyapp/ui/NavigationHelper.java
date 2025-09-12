@@ -26,13 +26,13 @@ public class NavigationHelper {
         if (btnProfile != null) {
             btnProfile.setOnClickListener(v -> {
                 if (currentActivityClass == ProfileActivity.class) {
-                    Toast.makeText(activity, "You're already in Profile", Toast.LENGTH_SHORT).show();
+                    // Already in Profile - no action needed
                 } else {
                     Intent loadingIntent = LoadingActivity.createIntent(
                         activity,
                         activity.getString(R.string.loading_profile_message),
                         ProfileActivity.class,
-                        1500
+                        500
                     );
                     activity.startActivity(loadingIntent);
                 }
@@ -43,13 +43,13 @@ public class NavigationHelper {
         if (btnShipment != null) {
             btnShipment.setOnClickListener(v -> {
                 if (currentActivityClass == ShipmentsActivity.class) {
-                    Toast.makeText(activity, "You're already in Shipments", Toast.LENGTH_SHORT).show();
+                    // Already in Shipments - no action needed
                 } else {
                     Intent loadingIntent = LoadingActivity.createIntent(
                         activity,
                         activity.getString(R.string.loading_shipments_message),
                         ShipmentsActivity.class,
-                        3000
+                        500
                     );
                     activity.startActivity(loadingIntent);
                 }
@@ -60,13 +60,13 @@ public class NavigationHelper {
         if (btnRoute != null) {
             btnRoute.setOnClickListener(v -> {
                 if (currentActivityClass == MapsActivity.class) {
-                    Toast.makeText(activity, "You're already in Routes", Toast.LENGTH_SHORT).show();
+                    // Already in Routes - no action needed
                 } else {
                     Intent loadingIntent = LoadingActivity.createIntent(
                         activity,
                         activity.getString(R.string.loading_routes_message),
                         MapsActivity.class,
-                        2800
+                        500
                     );
                     activity.startActivity(loadingIntent);
                 }
@@ -77,13 +77,13 @@ public class NavigationHelper {
         if (btnCheckpoint != null) {
             btnCheckpoint.setOnClickListener(v -> {
                 if (currentActivityClass == CheckpointActivity.class) {
-                    Toast.makeText(activity, "You're already in Checkpoints", Toast.LENGTH_SHORT).show();
+                    // Already in Checkpoints - no action needed
                 } else {
                     Intent loadingIntent = LoadingActivity.createIntent(
                         activity,
                         activity.getString(R.string.loading_checkpoints_message),
                         CheckpointActivity.class,
-                        3200
+                        500
                     );
                     activity.startActivity(loadingIntent);
                 }

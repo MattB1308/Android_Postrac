@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Skyapp</string>
+    <string name="app_name">Skyapp - Powered by StudioMist</string>
     <string name="title_activity_maps">MapsActivity</string>
     <string name="profile_title">Profile</string>
     <string name="profile_avatar">Profile avatar</string>

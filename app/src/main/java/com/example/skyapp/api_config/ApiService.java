@@ -3,7 +3,7 @@ package com.example.skyapp.api_config;
 public enum ApiService {
     LOGIN("https://login.sepex.io/"),
     USERS("https://users.sepex.io/"),
-    ROUTES("https://routing.sepex.io/"),
+
     SHIPMENTS("https://shipments.sepex.io/"),
     CHECKPOINTS("https://checkpoints.sepex.io/"),
     ROUTING("https://routing.sepex.io/");

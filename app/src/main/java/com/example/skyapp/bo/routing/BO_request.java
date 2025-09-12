@@ -1,6 +1,7 @@
 package com.example.skyapp.bo.routing;
 
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 public class BO_request {
 

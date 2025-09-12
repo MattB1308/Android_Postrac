@@ -39,8 +39,6 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton btnLogin, btnGoogle, btnOutlook;
     private TextView tvForgotPassword, tvSignUp;
     private MaterialCardView loginCard;
-    private View logoContainer;
-    private View decorativeCircleBlue1, decorativeCircleRed1, decorativeCircleBlue2, decorativeCircleRed2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,13 +54,6 @@ public class MainActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         tvSignUp = findViewById(R.id.tvSignUp);
         loginCard = findViewById(R.id.loginCard);
-        logoContainer = findViewById(R.id.logoContainer);
-        
-        // Initialize decorative elements
-        decorativeCircleBlue1 = findViewById(R.id.decorativeCircleBlue1);
-        decorativeCircleRed1 = findViewById(R.id.decorativeCircleRed1);
-        decorativeCircleBlue2 = findViewById(R.id.decorativeCircleBlue2);
-        decorativeCircleRed2 = findViewById(R.id.decorativeCircleRed2);
 
         // Setup animations
         setupEntranceAnimations();
@@ -72,124 +63,42 @@ public class MainActivity extends AppCompatActivity {
 
         btnGoogle.setOnClickListener(v -> {
             animateButtonClick(btnGoogle);
-            Toast.makeText(this, "Google Login Clicked", Toast.LENGTH_SHORT).show();
+            Log.d("MainActivity", "Google Login Clicked");
             // TODO: Integrate Google Sign-In
         });
 
         btnOutlook.setOnClickListener(v -> {
             animateButtonClick(btnOutlook);
-            Toast.makeText(this, "Microsoft Login Clicked", Toast.LENGTH_SHORT).show();
+            Log.d("MainActivity", "Microsoft Login Clicked");
             // TODO: Integrate Microsoft OAuth
         });
 
         tvForgotPassword.setOnClickListener(v -> {
-            Toast.makeText(this, "Forgot Password Clicked", Toast.LENGTH_SHORT).show();
+            Log.d("MainActivity", "Forgot Password Clicked");
             // TODO: Implement forgot password functionality
         });
 
         tvSignUp.setOnClickListener(v -> {
-            Toast.makeText(this, "Sign Up Clicked", Toast.LENGTH_SHORT).show();
+            Log.d("MainActivity", "Sign Up Clicked");
             // TODO: Navigate to sign up activity
         });
     }
 
     private void setupEntranceAnimations() {
-        // Initially hide views for animation
-        logoContainer.setAlpha(0f);
-        logoContainer.setScaleX(0.3f);
-        logoContainer.setScaleY(0.3f);
+        // Set initial states for entrance animations
         loginCard.setAlpha(0f);
         loginCard.setTranslationY(100f);
-
-        // Hide decorative circles initially
-        decorativeCircleBlue1.setAlpha(0f);
-        decorativeCircleRed1.setAlpha(0f);
-        decorativeCircleBlue2.setAlpha(0f);
-        decorativeCircleRed2.setAlpha(0f);
-
-        // Animate decorative circles with staggered entrance
-        decorativeCircleBlue1.animate()
-                .alpha(0.3f)
-                .setDuration(1200)
-                .setStartDelay(100)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-
-        decorativeCircleRed1.animate()
-                .alpha(0.25f)
-                .setDuration(1000)
-                .setStartDelay(300)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-
-        decorativeCircleBlue2.animate()
-                .alpha(0.2f)
-                .setDuration(800)
-                .setStartDelay(500)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-
-        decorativeCircleRed2.animate()
-                .alpha(0.15f)
-                .setDuration(600)
-                .setStartDelay(700)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-
-        // Animate logo entrance with scale and fade
-        logoContainer.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(1000)
-                .setStartDelay(400)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
 
         // Animate card entrance with delay
         loginCard.animate()
                 .alpha(1f)
                 .translationY(0f)
                 .setDuration(800)
-                .setStartDelay(800)
+                .setStartDelay(200)
                 .setInterpolator(new DecelerateInterpolator())
                 .start();
-
-        // Start continuous floating animation for decorative circles
-        startFloatingAnimation();
     }
 
-    private void startFloatingAnimation() {
-        // Floating animation for blue circles
-        ObjectAnimator floatBlue1 = ObjectAnimator.ofFloat(decorativeCircleBlue1, "translationY", 0f, -20f, 0f);
-        floatBlue1.setDuration(4000);
-        floatBlue1.setRepeatCount(ObjectAnimator.INFINITE);
-        floatBlue1.setInterpolator(new AccelerateDecelerateInterpolator());
-        floatBlue1.setStartDelay(1000);
-        floatBlue1.start();
-
-        ObjectAnimator floatBlue2 = ObjectAnimator.ofFloat(decorativeCircleBlue2, "translationY", 0f, 15f, 0f);
-        floatBlue2.setDuration(3500);
-        floatBlue2.setRepeatCount(ObjectAnimator.INFINITE);
-        floatBlue2.setInterpolator(new AccelerateDecelerateInterpolator());
-        floatBlue2.setStartDelay(1500);
-        floatBlue2.start();
-
-        // Floating animation for red circles
-        ObjectAnimator floatRed1 = ObjectAnimator.ofFloat(decorativeCircleRed1, "translationX", 0f, 10f, 0f);
-        floatRed1.setDuration(5000);
-        floatRed1.setRepeatCount(ObjectAnimator.INFINITE);
-        floatRed1.setInterpolator(new AccelerateDecelerateInterpolator());
-        floatRed1.setStartDelay(2000);
-        floatRed1.start();
-
-        ObjectAnimator floatRed2 = ObjectAnimator.ofFloat(decorativeCircleRed2, "translationX", 0f, -8f, 0f);
-        floatRed2.setDuration(4500);
-        floatRed2.setRepeatCount(ObjectAnimator.INFINITE);
-        floatRed2.setInterpolator(new AccelerateDecelerateInterpolator());
-        floatRed2.setStartDelay(2500);
-        floatRed2.start();
-    }
 
     private void animateButtonClick(View view) {
         // Scale animation for button feedback
@@ -230,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showErrorMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        Log.d("MainActivity", message);
         // Shake animation for error feedback
         shakeView(loginCard);
     }
@@ -286,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static void loginUser(Context context, String email, String password) {
         if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+            Log.d("MainActivity", "Please fill in all fields");
             return;
         }
 
@@ -335,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
                             context,
                             context.getString(R.string.loading_login_message),
                             MapsActivity.class,
-                            1000  // 4 seconds loading time
+                            500  // 0.5 seconds loading time
                         );
                         loadingIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         context.startActivity(loadingIntent);
@@ -343,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
                         if (context instanceof MainActivity) {
                             ((MainActivity) context).overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
                         }
-                    }, 1000);
+                    }, 500);
                 } else {
                     // ✅ Body de error crudo (si viene)
                     try {
@@ -356,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                     if (context instanceof MainActivity) {
                         ((MainActivity) context).showErrorMessage("Invalid credentials");
                     } else {
-                        Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show();
+                        Log.d("MainActivity", "Invalid credentials");
                     }
                 }
             }
@@ -374,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
                 if (context instanceof MainActivity) {
                     ((MainActivity) context).showErrorMessage("Network error: " + t.getMessage());
                 } else {
-                    Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e("MainActivity", "Error: " + t.getMessage());
                 }
             }
         });
