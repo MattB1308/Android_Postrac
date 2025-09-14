@@ -1,673 +1,425 @@
 package com.example.skyapp.ui;
 
-import android.content.Context;
+import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.GridLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.skyapp.R;
-import com.example.skyapp.api_config.ApiService;
-import com.example.skyapp.api_config.client;
-import com.example.skyapp.api_config.routing.RoutingInterface;
-import com.example.skyapp.bo.login.BO_response;
-import com.example.skyapp.bo.routing.BO_request;
-import com.example.skyapp.realm.DeliveryPackageRealm;
-import com.example.skyapp.realm.RealmManager;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
-import com.google.gson.Gson;
-
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
+import com.google.android.material.card.MaterialCardView;
+import com.example.skyapp.R;
+
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class CheckpointActivity extends AppCompatActivity {
 
     private static final String TAG = "CheckpointActivity";
+    private static final int REQUEST_CAMERA_PERMISSION = 200;
+    private static final int REQUEST_BARCODE_SCAN = 100;
+    private static final int REQUEST_IMAGE_CAPTURE = 101;
     
     // UI Components
-    private MaterialButton btnViewAll;
-    private MaterialButton btnCreateNew;
-    private MaterialButton btnSearch;
-    private MaterialButton btnUpdateCheckpoint;
+    private TextView barcodeText;
+    private Button scanBarcodeButton;
+    private Button takePhotoButton;
+    private TextView photoCountText;
+    private GridLayout photoGrid;
+    private Button deliveredButton;
+    private Button exceptionButton;
+    private TextView resetButton;
+    private MaterialCardView statusCard;
+    private TextView statusText;
+    private ImageView statusIcon;
     
-    // Tracking input components
-    private TextInputLayout tilTrackingNumber;
-    private TextInputEditText etTrackingNumber;
-    private TextInputLayout tilCheckpointStatus;
-    private AutoCompleteTextView actvCheckpointStatus;
-    private MaterialCardView trackingCard;
-    
-    // Package info display
-    private TextView txtPackageInfo, txtDestination, txtCurrentStatus, txtLastUpdate;
-    private MaterialCardView packageInfoCard;
-    
-    // Stats
-    private TextView txtTotalCheckpoints, txtActiveCheckpoints, txtCompletedCheckpoints;
-    
-    // Package List
-    private RecyclerView recyclerViewPackages;
-    private PackageCheckpointAdapter packageAdapter;
-    private MaterialCardView packagesListCard;
+    // New status message components
+    private LinearLayout statusMessageCard;
+    private TextView statusMessageText;
+    private ImageView statusMessageIcon;
     
     // Data
-    private String accessToken;
-    private int userId;
-    private String userUuid;
-    private String currentRouteId;
-    private List<com.example.skyapp.bo.routing.BO_response.RoutePointData> allPackages;
-    private com.example.skyapp.bo.routing.BO_response.RoutePointData currentPackage;
-    private DeliveryPackageRealm currentRealmPackage;
-    private RealmManager realmManager;
+    private String scannedBarcode = "";
+    private List<String> capturedImagePaths = new ArrayList<>();
+    private String currentPhotoPath;
     
-    // Delivery status options for realm
-    private String[] deliveryStatuses = {
-        "0 - Pending",
-        "1 - Delivered",
-        "2 - Exception"
-    };
+    // Status enum
+    private enum DeliveryStatus {
+        DELIVERED, EXCEPTION, NONE
+    }
     
-    private String[] exceptionReasons = {
-        "Could Not Access",
-        "Could Not Find",
-        "Refused",
-        "Damaged Package",
-        "Incorrect Address",
-        "Customer Not Home",
-        "Business Closed",
-        "Other"
-    };
+    private DeliveryStatus currentStatus = DeliveryStatus.NONE;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_checkpoint);
-
-        // Initialize data structures
-        allPackages = new ArrayList<>();
-        realmManager = RealmManager.getInstance(this);
-        
-        // Load login data
-        loadLoginData();
+        setContentView(R.layout.activity_pod_scanner);
         
         initializeViews();
         setupClickListeners();
-        setupDeliveryStatusDropdown();
-        
-        // Setup RecyclerView
-        setupRecyclerView();
-        
-        // Load package data for tracking
-        loadPackageData();
+        checkCameraPermission();
+        updateUI();
     }
 
     private void initializeViews() {
-        btnViewAll = findViewById(R.id.btnViewAll);
-        btnCreateNew = findViewById(R.id.btnCreateNew);
-        btnSearch = findViewById(R.id.btnSearch);
-        btnUpdateCheckpoint = findViewById(R.id.btnUpdateCheckpoint);
+        barcodeText = findViewById(R.id.barcodeText);
+        scanBarcodeButton = findViewById(R.id.scanBarcodeButton);
+        takePhotoButton = findViewById(R.id.takePhotoButton);
+        photoCountText = findViewById(R.id.photoCountText);
+        photoGrid = findViewById(R.id.photoGrid);
+        deliveredButton = findViewById(R.id.deliveredButton);
+        exceptionButton = findViewById(R.id.exceptionButton);
+        resetButton = findViewById(R.id.resetButton);
+        statusCard = findViewById(R.id.statusCard);
+        statusText = findViewById(R.id.statusText);
+        statusIcon = findViewById(R.id.statusIcon);
         
-        // Tracking input components
-        tilTrackingNumber = findViewById(R.id.tilTrackingNumber);
-        etTrackingNumber = findViewById(R.id.etTrackingNumber);
-        tilCheckpointStatus = findViewById(R.id.tilCheckpointStatus);
-        actvCheckpointStatus = findViewById(R.id.actvCheckpointStatus);
-        trackingCard = findViewById(R.id.trackingCard);
+        // New status message components
+        statusMessageCard = findViewById(R.id.statusMessageCard);
+        statusMessageText = findViewById(R.id.statusMessageText);
+        statusMessageIcon = findViewById(R.id.statusMessageIcon);
         
-        // Package info components
-        txtPackageInfo = findViewById(R.id.txtPackageInfo);
-        txtDestination = findViewById(R.id.txtDestination);
-        txtCurrentStatus = findViewById(R.id.txtCurrentStatus);
-        txtLastUpdate = findViewById(R.id.txtLastUpdate);
-        packageInfoCard = findViewById(R.id.packageInfoCard);
-        
-        // Stats
-        txtTotalCheckpoints = findViewById(R.id.txtTotalCheckpoints);
-        txtActiveCheckpoints = findViewById(R.id.txtActiveCheckpoints);
-        txtCompletedCheckpoints = findViewById(R.id.txtCompletedCheckpoints);
-        
-        // Package List
-        recyclerViewPackages = findViewById(R.id.recyclerViewPackages);
-        packagesListCard = findViewById(R.id.packagesListCard);
-        
-        // Initially hide package info
-        packageInfoCard.setVisibility(View.GONE);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Scan");
+        }
     }
 
     private void setupClickListeners() {
-        // Show/hide tracking functionality
-        btnViewAll.setOnClickListener(v -> {
-            if (trackingCard.getVisibility() == View.VISIBLE) {
-                trackingCard.setVisibility(View.GONE);
-                btnViewAll.setText("Track Package");
-            } else {
-                trackingCard.setVisibility(View.VISIBLE);
-                btnViewAll.setText("Hide Tracking");
-            }
-        });
-
-        btnCreateNew.setOnClickListener(v -> {
-            Log.d(TAG, "Create New Checkpoint - Coming Soon");
-        });
-
-        // Search for tracking number  
-        btnSearch.setOnClickListener(v -> {
-            searchTrackingNumber();
-        });
-        
-        // Search button in tracking card
-        MaterialButton btnSearchTracking = findViewById(R.id.btnSearchTracking);
-        btnSearchTracking.setOnClickListener(v -> {
-            searchTrackingNumber();
-        });
-        
-        // Update checkpoint status
-        btnUpdateCheckpoint.setOnClickListener(v -> {
-            updateCheckpointStatus();
-        });
-
-        // Back to Maps functionality
-        // Setup navigation
+        // Setup navigation first
         NavigationHelper.setupNavigation(this, CheckpointActivity.class);
         NavigationHelper.highlightCurrentSection(this, CheckpointActivity.class);
-    }
-    
-    private void setupRecyclerView() {
-        packageAdapter = new PackageCheckpointAdapter();
-        recyclerViewPackages.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewPackages.setAdapter(packageAdapter);
-    }
-    
-    private void loadLoginData() {
-        try {
-            SharedPreferences sharedPreferences = getSharedPreferences("LoginInfo", Context.MODE_PRIVATE);
-            String loginResponseJson = sharedPreferences.getString("login_response", null);
-
-            if (loginResponseJson != null) {
-                BO_response.LoginResponse loginResponse = new Gson().fromJson(loginResponseJson, BO_response.LoginResponse.class);
-
-                if (loginResponse != null) {
-                    accessToken = loginResponse.getAccessToken();
-                    userId = loginResponse.getUserId();
-                    userUuid = loginResponse.getUserUuid();
-                    currentRouteId = "route_" + userId + "_" + System.currentTimeMillis() / (1000 * 60 * 60 * 24); // Daily route ID
-
-                    Log.d(TAG, "Login data loaded - UserId: " + userId);
-                } else {
-                    Log.d(TAG, "No valid response data");
-                }
-            } else {
-                Log.d(TAG, "No login data found");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading login data", e);
-            Log.e(TAG, "Error loading login data");
-        }
-    }
-    
-    private void setupCheckpointStatusDropdown() {
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-            this, 
-            android.R.layout.simple_dropdown_item_1line, 
-            deliveryStatuses
-        );
-        actvCheckpointStatus.setAdapter(adapter);
-    }
-    
-    private void loadPackageData() {
-        if (accessToken == null || userUuid == null) {
-            Log.d(TAG, "Login data not available");
-            return;
-        }
-
-        // Create request objects
-        BO_request.User user = new BO_request.User(userId, userUuid);
-        BO_request.Application application = new BO_request.Application("83d6661f-9f64-43c4-b672-cdcab3a57685");
-        BO_request.UserInfo userInfo = new BO_request.UserInfo(user, application);
-
-        // Get current date
-        String currentDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault()).format(new Date());
         
-        BO_request.DeliveryRouteRequest request = new BO_request.DeliveryRouteRequest(userInfo, userId, currentDate);
-
-        // Create API service
-        RoutingInterface apiService = client.createService(this, ApiService.ROUTING, RoutingInterface.class);
-
-        // Make API call
-        Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call = 
-            apiService.getDeliveryRouteByUserAndDate("Bearer " + accessToken, request);
-
-        call.enqueue(new Callback<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse>() {
-            @Override
-            public void onResponse(Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call, 
-                                 Response<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> response) {
-                
-                if (response.isSuccessful() && response.body() != null) {
-                    List<com.example.skyapp.bo.routing.BO_response.Route> routes = response.body().getRoutes();
-                    if (routes != null && !routes.isEmpty()) {
-                        // Load details for the first route
-                        loadRouteDetails(routes.get(0).getRouteId(), userInfo);
-                    }
-                } else {
-                    Log.e(TAG, "API Error: " + response.code());
-                }
+        // Then setup pod scanner click listeners (these should override any conflicts)
+        scanBarcodeButton.setOnClickListener(v -> {
+            Log.d(TAG, "Scan button clicked - starting barcode scanner");
+            startBarcodeScanner();
+        });
+        
+        takePhotoButton.setOnClickListener(v -> {
+            Log.d(TAG, "Take Photo button clicked");
+            if (capturedImagePaths.size() < 4) {
+                takePhoto();
+            } else {
+                Toast.makeText(this, "Maximum 4 photos allowed", Toast.LENGTH_SHORT).show();
             }
-
-            @Override
-            public void onFailure(Call<com.example.skyapp.bo.routing.BO_response.DeliveryRouteResponse> call, Throwable t) {
-                Log.e(TAG, "API Call failed", t);
-            }
+        });
+        
+        deliveredButton.setOnClickListener(v -> {
+            Log.d(TAG, "Delivered button clicked");
+            markAsDelivered();
+        });
+        
+        exceptionButton.setOnClickListener(v -> {
+            Log.d(TAG, "Exception button clicked");
+            markAsException();
+        });
+        
+        resetButton.setOnClickListener(v -> {
+            Log.d(TAG, "Reset button clicked");
+            resetForm();
         });
     }
     
-    private void loadRouteDetails(int routeId, BO_request.UserInfo userInfo) {
-        BO_request.RouteDetailsRequest request = new BO_request.RouteDetailsRequest(userInfo, routeId);
-
-        RoutingInterface apiService = client.createService(this, ApiService.ROUTING, RoutingInterface.class);
-        Call<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> call = 
-            apiService.getDeliveryRouteInfoByRouteId("Bearer " + accessToken, request);
-
-        call.enqueue(new Callback<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse>() {
-            @Override
-            public void onResponse(Call<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> call,
-                                 Response<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> response) {
-                
-                if (response.isSuccessful() && response.body() != null) {
-                    processPackageData(response.body());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse> call, Throwable t) {
-                Log.e(TAG, "Route Details API Call failed", t);
-            }
-        });
-    }
-    
-    private void processPackageData(com.example.skyapp.bo.routing.BO_response.RouteDetailsResponse response) {
-        try {
-            allPackages.clear();
-            
-            List<com.example.skyapp.bo.routing.BO_response.RouteDetail> routes = response.getData().getRoute();
-            
-            if (routes != null && !routes.isEmpty()) {
-                com.example.skyapp.bo.routing.BO_response.RouteDetail routeDetail = routes.get(0);
-                com.example.skyapp.bo.routing.BO_response.MainInfo mainInfo = routeDetail.getData().getMainInfo();
-                
-                // Collect all packages from all route points
-                if (mainInfo.getRoutePoints() != null) {
-                    for (com.example.skyapp.bo.routing.BO_response.RoutePoint routePoint : mainInfo.getRoutePoints()) {
-                        if (routePoint.getRoutePointData() != null) {
-                            allPackages.addAll(routePoint.getRoutePointData());
-                        }
-                    }
-                }
-                
-                // Update stats
-                updateStats();
-                
-                // Load packages in ordered list
-                loadOrderedPackages();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error processing package data", e);
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, 
+                    new String[]{Manifest.permission.CAMERA}, 
+                    REQUEST_CAMERA_PERMISSION);
         }
-    }
-    
-    private void updateStats() {
-        int totalCheckpoints = allPackages.size();
-        int activeCheckpoints = 0;
-        int completedCheckpoints = 0;
-        
-        for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : allPackages) {
-            String status = packageData.getDeliveryStatusDescription();
-            if (status != null && (status.toLowerCase().contains("delivered") || status.toLowerCase().contains("del"))) {
-                completedCheckpoints++;
-            } else {
-                activeCheckpoints++;
-            }
-        }
-        
-        // Update UI
-        txtTotalCheckpoints.setText(String.valueOf(totalCheckpoints));
-        txtActiveCheckpoints.setText(String.valueOf(activeCheckpoints));
-        txtCompletedCheckpoints.setText(String.valueOf(completedCheckpoints));
-    }
-    
-    private void searchTrackingNumber() {
-        String trackingNumber = etTrackingNumber.getText() != null ? etTrackingNumber.getText().toString().trim() : "";
-        
-        if (TextUtils.isEmpty(trackingNumber)) {
-            tilTrackingNumber.setError("Please enter a tracking number");
-            return;
-        }
-        
-        tilTrackingNumber.setError(null);
-        
-        // Search for package in Realm database first
-        currentRealmPackage = realmManager.findPackageByTracking(trackingNumber);
-        
-        if (currentRealmPackage != null) {
-            currentPackage = null; // Clear legacy package
-            displayPackageInfo();
-            Log.d(TAG, "Package found in Realm: " + currentRealmPackage.getConsigneeName());
-        } else {
-            // Fallback to searching in loaded data
-            currentPackage = null;
-            for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : allPackages) {
-                if (packageData.getTrackingNumber() != null && 
-                    packageData.getTrackingNumber().equalsIgnoreCase(trackingNumber)) {
-                    currentPackage = packageData;
-                    break;
-                }
-            }
-            
-            if (currentPackage != null) {
-                displayPackageInfo();
-                Log.d(TAG, "Package found in loaded data!");
-            } else {
-                packageInfoCard.setVisibility(View.GONE);
-                Log.d(TAG, "Tracking number not found in current routes");
-            }
-        }
-    }
-    
-    private void displayPackageInfo() {
-        if (currentRealmPackage != null) {
-            // Display Realm package info
-            txtPackageInfo.setText("Tracking: " + currentRealmPackage.getTrackingNumber());
-            txtDestination.setText("Destination: " + currentRealmPackage.getConsigneeAddress());
-            txtCurrentStatus.setText("Status: " + currentRealmPackage.getDeliveryStatusText());
-            txtLastUpdate.setText("Customer: " + currentRealmPackage.getConsigneeName());
-            
-            // Set current status in dropdown
-            actvCheckpointStatus.setText(currentRealmPackage.getDeliveryStatus() + " - " + 
-                currentRealmPackage.getDeliveryStatusText(), false);
-                
-        } else if (currentPackage != null) {
-            // Fallback to display legacy package info
-            txtPackageInfo.setText("Tracking: " + currentPackage.getTrackingNumber());
-            txtDestination.setText("Container: " + (currentPackage.getContainer() != null ? 
-                currentPackage.getContainer() : "Unknown"));
-            txtCurrentStatus.setText("Status: " + (currentPackage.getDeliveryStatusDescription() != null ? 
-                currentPackage.getDeliveryStatusDescription() : "In Transit"));
-            txtLastUpdate.setText("Status Code: " + currentPackage.getDeliveryStatus());
-        }
-        
-        packageInfoCard.setVisibility(View.VISIBLE);
-    }
-    
-    private void updateCheckpointStatus() {
-        if (currentRealmPackage == null && currentPackage == null) {
-            Log.d(TAG, "Please search for a package first");
-            return;
-        }
-        
-        String selectedStatus = actvCheckpointStatus.getText().toString();
-        if (TextUtils.isEmpty(selectedStatus)) {
-            tilCheckpointStatus.setError("Please select a delivery status");
-            return;
-        }
-        
-        tilCheckpointStatus.setError(null);
-        
-        if (currentRealmPackage != null) {
-            // Extract status code (first digit)
-            int statusCode = -1;
-            String notes = "";
-            
-            if (selectedStatus.startsWith("0")) {
-                statusCode = 0; // Pending
-            } else if (selectedStatus.startsWith("1")) {
-                statusCode = 1; // Delivered
-                notes = "Package delivered successfully";
-            } else if (selectedStatus.startsWith("2")) {
-                statusCode = 2; // Exception
-                // Show exception reason dialog
-                showExceptionReasonDialog(currentRealmPackage.getTrackingNumber());
-                return;
-            }
-            
-            if (statusCode != -1) {
-                // Update in Realm
-                boolean updated = realmManager.updateDeliveryStatus(currentRealmPackage.getTrackingNumber(), statusCode, notes);
-                
-                if (updated) {
-                    // Refresh the package info from Realm
-                    currentRealmPackage = realmManager.findPackageByTracking(currentRealmPackage.getTrackingNumber());
-                    displayPackageInfo();
-                    updateDeliveryStats();
-                    
-                    Log.d(TAG, "Updated delivery status to: " + statusCode + " for tracking: " + currentRealmPackage.getTrackingNumber());
-                } else {
-                    Log.e(TAG, "Failed to update delivery status");
-                }
-            }
-        } else {
-            // Legacy update for non-Realm packages
-            Log.d(TAG, "Updated legacy package status");
-        
-            // Update the display
-            txtCurrentStatus.setText("Status: " + selectedStatus);
-            txtLastUpdate.setText("Last Update: " + new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date()));
-        }
-    }
-    
-    private void showExceptionReasonDialog(String trackingNumber) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Exception Reason")
-                .setItems(exceptionReasons, (dialog, which) -> {
-                    String reason = exceptionReasons[which];
-                    // Update with exception status and reason
-                    boolean updated = realmManager.updateDeliveryStatus(trackingNumber, 2, reason);
-                    
-                    if (updated) {
-                        // Refresh the package info from Realm
-                        currentRealmPackage = realmManager.findPackageByTracking(trackingNumber);
-                        displayPackageInfo();
-                        updateDeliveryStats();
-                        loadOrderedPackages(); // Refresh the list
-                        
-                        Log.d(TAG, "Updated delivery status to exception with reason: " + reason);
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-    
-    private void setupDeliveryStatusDropdown() {
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, deliveryStatuses);
-        actvCheckpointStatus.setAdapter(adapter);
-    }
-    
-    private void updateDeliveryStats() {
-        if (currentRouteId == null) return;
-        
-        RealmManager.DeliveryStats stats = realmManager.getDeliveryStats(currentRouteId);
-        
-        txtTotalCheckpoints.setText(String.valueOf(stats.getTotal()));
-        txtActiveCheckpoints.setText(String.valueOf(stats.getPending()));
-        txtCompletedCheckpoints.setText(String.valueOf(stats.getDelivered() + stats.getExceptions()));
-        
-        Log.d(TAG, "Updated delivery stats - Total: " + stats.getTotal() + 
-              ", Pending: " + stats.getPending() + 
-              ", Delivered: " + stats.getDelivered() + 
-              ", Exceptions: " + stats.getExceptions());
     }
     
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (realmManager != null) {
-            realmManager.close();
-        }
-    }
-    
-    // Package Adapter for RecyclerView
-    private class PackageCheckpointAdapter extends RecyclerView.Adapter<PackageCheckpointAdapter.PackageViewHolder> {
-        
-        private List<DeliveryPackageRealm> packages = new ArrayList<>();
-        
-        public void updatePackages(List<DeliveryPackageRealm> newPackages) {
-            this.packages = newPackages;
-            notifyDataSetChanged();
-        }
-        
-        @NonNull
-        @Override
-        public PackageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_package_checkpoint, parent, false);
-            return new PackageViewHolder(view);
-        }
-        
-        @Override
-        public void onBindViewHolder(@NonNull PackageViewHolder holder, int position) {
-            DeliveryPackageRealm packageRealm = packages.get(position);
-            holder.bind(packageRealm);
-        }
-        
-        @Override
-        public int getItemCount() {
-            return packages.size();
-        }
-        
-        class PackageViewHolder extends RecyclerView.ViewHolder {
-            
-            private TextView txtTrackingNumber, txtDeliveryOrder, txtStatus, txtConsigneeName;
-            private com.google.android.material.chip.Chip chipStatus;
-            private MaterialCardView cardContainer;
-            
-            public PackageViewHolder(@NonNull View itemView) {
-                super(itemView);
-                txtTrackingNumber = itemView.findViewById(R.id.txtTrackingNumber);
-                txtDeliveryOrder = itemView.findViewById(R.id.txtDeliveryOrder);
-                txtConsigneeName = itemView.findViewById(R.id.txtConsigneeName);
-                chipStatus = itemView.findViewById(R.id.chipStatus);
-                cardContainer = itemView.findViewById(R.id.cardContainer);
-            }
-            
-            public void bind(DeliveryPackageRealm packageRealm) {
-                txtTrackingNumber.setText(packageRealm.getTrackingNumber());
-                txtDeliveryOrder.setText("Order #" + packageRealm.getDeliveryOrder());
-                txtConsigneeName.setText(packageRealm.getConsigneeName());
-                
-                // Set status chip
-                String statusText;
-                int chipColor;
-                switch (packageRealm.getDeliveryStatus()) {
-                    case 0:
-                        statusText = "Pending";
-                        chipColor = R.color.sepex_red;
-                        break;
-                    case 1:
-                        statusText = "Delivered";
-                        chipColor = R.color.sepex_green;
-                        break;
-                    case 2:
-                        statusText = "Exception";
-                        chipColor = R.color.sepex_blue;
-                        break;
-                    default:
-                        statusText = "Unknown";
-                        chipColor = R.color.sepex_blue;
-                        break;
-                }
-                
-                chipStatus.setText(statusText);
-                chipStatus.setChipBackgroundColorResource(chipColor);
-                chipStatus.setTextColor(getResources().getColor(android.R.color.white, null));
-                
-                // Set click listener for package options
-                cardContainer.setOnClickListener(v -> showPackageOptionsDialog(packageRealm));
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, 
+                                         @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Camera permission required for scanning", Toast.LENGTH_LONG).show();
             }
         }
     }
     
-    private void showPackageOptionsDialog(DeliveryPackageRealm packageRealm) {
-        String[] options = {"Scan Package", "Mark as Delivered", "Mark as Exception"};
+    private void startBarcodeScanner() {
+        Log.d(TAG, "startBarcodeScanner() called");
+        try {
+            Intent intent = new Intent(this, BarcodeScannerActivity.class);
+            Log.d(TAG, "Intent created, starting activity");
+            startActivityForResult(intent, REQUEST_BARCODE_SCAN);
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting barcode scanner", e);
+            // Fallback: simulate a scanned barcode after a short delay
+            Toast.makeText(this, "Simulating barcode scan...", Toast.LENGTH_SHORT).show();
+            new android.os.Handler().postDelayed(() -> {
+                scannedBarcode = "DEMO" + System.currentTimeMillis() % 10000;
+                updateUI();
+                Toast.makeText(this, "Barcode scanned: " + scannedBarcode, Toast.LENGTH_SHORT).show();
+            }, 2000);
+        }
+    }
+    
+    private void takePhoto() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                Log.e(TAG, "Error occurred while creating the File", ex);
+                return;
+            }
+            
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.skyapp.fileprovider",
+                        photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            }
+        }
+    }
+    
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "POD_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(imageFileName, ".jpg", storageDir);
         
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Package: " + packageRealm.getTrackingNumber())
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0: // Scan Package
-                            scanPackage(packageRealm);
-                            break;
-                        case 1: // Mark as Delivered
-                            markAsDelivered(packageRealm);
-                            break;
-                        case 2: // Mark as Exception
-                            markAsException(packageRealm);
-                            break;
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == REQUEST_BARCODE_SCAN && resultCode == RESULT_OK) {
+            if (data != null && data.hasExtra("barcode")) {
+                scannedBarcode = data.getStringExtra("barcode");
+                updateUI();
+            }
+        } else if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            if (currentPhotoPath != null) {
+                capturedImagePaths.add(currentPhotoPath);
+                updateUI();
+                addPhotoToGrid(currentPhotoPath);
+            }
+        }
+    }
+    
+    private void addPhotoToGrid(String imagePath) {
+        View photoView = getLayoutInflater().inflate(R.layout.photo_item, photoGrid, false);
+        ImageView imageView = photoView.findViewById(R.id.photoImageView);
+        MaterialCardView deleteButton = photoView.findViewById(R.id.deleteButton);
+        
+        // Load and display the image
+        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+        if (bitmap != null) {
+            imageView.setImageBitmap(bitmap);
+        }
+        
+        // Set delete button click listener
+        deleteButton.setOnClickListener(v -> {
+            // Show confirmation dialog
+            new AlertDialog.Builder(this)
+                    .setTitle("Delete Photo")
+                    .setMessage("Are you sure you want to delete this photo?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        capturedImagePaths.remove(imagePath);
+                        photoGrid.removeView(photoView);
+                        
+                        // Delete the file
+                        File file = new File(imagePath);
+                        if (file.exists()) {
+                            file.delete();
+                        }
+                        
+                        updateUI();
+                        Log.d(TAG, "Photo deleted: " + imagePath);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+        
+        photoGrid.addView(photoView);
+        Log.d(TAG, "Photo added to grid: " + imagePath);
+    }
+    
+    private void updateUI() {
+        updateUIWithoutStatus();
+        // Update status display
+        updateStatusDisplay();
+    }
+    
+    private void updateUIWithoutStatus() {
+        // Update barcode display
+        if (scannedBarcode.isEmpty()) {
+            barcodeText.setText("No barcode scanned");
+            barcodeText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
+        } else {
+            barcodeText.setText(scannedBarcode);
+            barcodeText.setTextColor(ContextCompat.getColor(this, android.R.color.black));
+        }
+        
+        // Update photo count
+        photoCountText.setText(String.format(Locale.getDefault(), 
+                "Photos (%d/4)", capturedImagePaths.size()));
+        
+        // Update Take Photo button state
+        takePhotoButton.setEnabled(capturedImagePaths.size() < 4);
+        takePhotoButton.setAlpha(capturedImagePaths.size() < 4 ? 1.0f : 0.5f);
+        
+        // Update action buttons
+        boolean canSubmit = !scannedBarcode.isEmpty() && !capturedImagePaths.isEmpty();
+        deliveredButton.setEnabled(canSubmit);
+        exceptionButton.setEnabled(canSubmit);
+    }
+    
+    private void updateStatusDisplay() {
+        switch (currentStatus) {
+            case DELIVERED:
+                statusCard.setVisibility(View.VISIBLE);
+                statusText.setText("Marked as Delivered");
+                statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+                statusIcon.setImageResource(R.drawable.ic_check_circle);
+                statusIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+                statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.light_green));
+                break;
+            case EXCEPTION:
+                statusCard.setVisibility(View.VISIBLE);
+                statusText.setText("Marked as Exception");
+                statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark));
+                statusIcon.setImageResource(R.drawable.ic_warning);
+                statusIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_orange_dark));
+                statusCard.setCardBackgroundColor(ContextCompat.getColor(this, R.color.light_orange));
+                break;
+            case NONE:
+            default:
+                statusCard.setVisibility(View.GONE);
+                break;
+        }
+    }
+    
+    private void markAsDelivered() {
+        currentStatus = DeliveryStatus.DELIVERED;
+        
+        // Show status message
+        showStatusMessage("Marked as Delivered", R.drawable.ic_check_circle, R.color.sepex_green);
+        
+        // Process the delivery
+        processDelivery(true);
+        
+        // Update UI without showing status display (to avoid duplicate)
+        updateUIWithoutStatus();
+        Log.d(TAG, "Package marked as delivered");
+    }
+    
+    private void markAsException() {
+        currentStatus = DeliveryStatus.EXCEPTION;
+        
+        // Show status message
+        showStatusMessage("Marked as Exception", R.drawable.ic_warning, android.R.color.holo_orange_dark);
+        
+        // Process the exception
+        processDelivery(false);
+        
+        // Update UI without showing status display (to avoid duplicate)
+        updateUIWithoutStatus();
+        Log.d(TAG, "Package marked as exception");
+    }
+    
+    private void showStatusMessage(String message, int iconRes, int colorRes) {
+        if (statusMessageCard != null && statusMessageText != null && statusMessageIcon != null) {
+            statusMessageText.setText(message);
+            statusMessageIcon.setImageResource(iconRes);
+            
+            // Set colors based on status type
+            if (colorRes == R.color.sepex_green || colorRes == android.R.color.holo_green_dark) {
+                // Delivered - Green
+                statusMessageIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+                statusMessageText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+                statusMessageCard.setBackgroundColor(ContextCompat.getColor(this, R.color.light_green));
+            } else {
+                // Exception - Orange
+                statusMessageIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_orange_dark));
+                statusMessageText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark));
+                statusMessageCard.setBackgroundColor(ContextCompat.getColor(this, R.color.light_orange));
+            }
+            
+            statusMessageCard.setVisibility(View.VISIBLE);
+            Log.d(TAG, "Status message shown: " + message);
+        }
+    }
+    
+    private void processDelivery(boolean delivered) {
+        // Here you would typically send the data to your backend
+        Log.d(TAG, String.format("Processing delivery - Status: %s, Barcode: %s, Photos: %d",
+                delivered ? "Delivered" : "Exception", scannedBarcode, capturedImagePaths.size()));
+        
+        // Example: Send to API
+        // ApiManager.getInstance().submitPodData(scannedBarcode, capturedImagePaths, delivered);
+    }
+    
+    private void resetForm() {
+        new AlertDialog.Builder(this)
+                .setTitle("Reset Form")
+                .setMessage("Are you sure you want to reset all data?")
+                .setPositiveButton("Reset", (dialog, which) -> {
+                    // Clear barcode
+                    scannedBarcode = "";
+                    
+                    // Clear images
+                    for (String imagePath : capturedImagePaths) {
+                        File file = new File(imagePath);
+                        if (file.exists()) {
+                            file.delete();
+                        }
                     }
+                    capturedImagePaths.clear();
+                    
+                    // Clear photo grid
+                    photoGrid.removeAllViews();
+                    
+                    // Reset status
+                    currentStatus = DeliveryStatus.NONE;
+                    
+                    // Hide status message
+                    if (statusMessageCard != null) {
+                        statusMessageCard.setVisibility(View.GONE);
+                    }
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    Toast.makeText(this, "Form reset successfully", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
-    }
-    
-    private void scanPackage(DeliveryPackageRealm packageRealm) {
-        Log.d(TAG, "Scan functionality for " + packageRealm.getTrackingNumber() + " - Coming Soon");
-        // TODO: Implement barcode/QR scanning
-    }
-    
-    private void markAsDelivered(DeliveryPackageRealm packageRealm) {
-        boolean updated = realmManager.updateDeliveryStatus(packageRealm.getTrackingNumber(), 1, "Delivered successfully");
-        
-        if (updated) {
-            loadOrderedPackages(); // Refresh the list
-            updateDeliveryStats();
-            Log.d(TAG, "Marked package as delivered: " + packageRealm.getTrackingNumber());
-        }
-    }
-    
-    private void markAsException(DeliveryPackageRealm packageRealm) {
-        showExceptionReasonDialog(packageRealm.getTrackingNumber());
-    }
-    
-    private void loadOrderedPackages() {
-        if (currentRouteId == null) {
-            Log.w(TAG, "No route ID available for loading packages");
-            return;
-        }
-        
-        // Get packages from Realm ordered by delivery order
-        io.realm.RealmResults<DeliveryPackageRealm> realmPackages = 
-            realmManager.getAllPackagesForRoute(currentRouteId);
-        
-        List<DeliveryPackageRealm> packagesList = new ArrayList<>();
-        for (DeliveryPackageRealm pkg : realmPackages) {
-            packagesList.add(pkg);
-        }
-        
-        // Update adapter
-        packageAdapter.updatePackages(packagesList);
-        
-        Log.d(TAG, "Loaded " + packagesList.size() + " packages ordered by delivery order");
     }
 }

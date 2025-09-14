@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./gradlew:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//f/Projects_info/Sepex_Postrac/**)"
     ],
     "deny": [],
     "ask": []

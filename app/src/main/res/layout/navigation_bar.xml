@@ -179,7 +179,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/box_checkpoint"
+                    android:src="@drawable/ic_event"
                     app:tint="@color/sepex_red" />
 
             </FrameLayout>
@@ -188,7 +188,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
-                android:text="Checkpoints"
+                android:text="Scan"
                 android:textColor="@color/sepex_red"
                 android:textSize="12sp" />
 

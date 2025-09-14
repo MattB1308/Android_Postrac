@@ -64,6 +64,7 @@ public class ShipmentsActivity extends AppCompatActivity {
     private PackageAdapter packageAdapter;
     private RealmManager realmManager;
     
+    
     // Enhanced package data class to include consignee information
     private static class EnhancedPackageData {
         com.example.skyapp.bo.routing.BO_response.RoutePointData packageData;
@@ -558,6 +559,8 @@ public class ShipmentsActivity extends AppCompatActivity {
         packageAdapter.updateData(currentPackages);
         // Packages sorted silently
     }
+    
+    
     
     @Override
     protected void onDestroy() {

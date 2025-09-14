@@ -69,7 +69,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private MaterialButton btnLoadRoutes;
     private FloatingActionButton fabFilter;
     private FloatingActionButton fabUserLocation;
-    private FloatingActionButton fabRouteOrigin;
     private FloatingActionButton fabNavigate;
     
     // Data
@@ -82,6 +81,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean filterCardVisible = false;
     private String currentRouteId;
     private RealmManager realmManager;
+    
+    // Navigation state for arrival confirmation
+    private boolean navigationInProgress = false;
+    private String currentNavigationApp = "";
+    private String currentDestinationName = "";
+    private String currentDestinationAddress = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +124,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         btnLoadRoutes = findViewById(R.id.btnLoadRoutes);
         fabFilter = findViewById(R.id.fab_filter);
         fabUserLocation = findViewById(R.id.fab_user_location);
-        fabRouteOrigin = findViewById(R.id.fab_route_origin);
         fabNavigate = findViewById(R.id.fab_navigate);
         
         // Initialize RealmManager
@@ -133,7 +137,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // FAB listeners
         fabUserLocation.setOnClickListener(v -> getCurrentLocation());
-        fabRouteOrigin.setOnClickListener(v -> centerOnRoute());
         fabFilter.setOnClickListener(v -> toggleFilterCard());
         fabNavigate.setOnClickListener(v -> showNavigationMenu());
 
@@ -660,7 +663,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     * Show navigation menu to select app (Google Maps, Waze, Here We Go)
+     * Show navigation app selection dialog
      */
     private void showNavigationMenu() {
         if (currentRouteId == null) {
@@ -673,20 +676,84 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         
         if (nextPackage != null) {
             Log.d(TAG, "Found next delivery: " + nextPackage.getConsigneeName() + " at " + nextPackage.getConsigneeAddress());
-            
-            // Get current location and then show navigation options
-            getCurrentLocationForNavigation(nextPackage);
+            showNavigationAppSelectionDialog(nextPackage);
         } else {
             Log.d(TAG, "No pending deliveries found");
             // Try to get next delivery from current route points
-            getNextDeliveryFromRoutePoints();
+            getNextDeliveryFromRoutePointsAndShowDialog();
         }
+    }
+    
+    /**
+     * Show elegant dialog to select navigation app
+     */
+    private void showNavigationAppSelectionDialog(DeliveryPackageRealm nextPackage) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_navigation_selection, null);
+        
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        
+        android.app.AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        
+        // Set up click listeners for each option
+        dialogView.findViewById(R.id.cardGoogleMaps).setOnClickListener(v -> {
+            dialog.dismiss();
+            getCurrentLocationAndNavigate(nextPackage, "GoogleMaps");
+        });
+        
+        dialogView.findViewById(R.id.cardWaze).setOnClickListener(v -> {
+            dialog.dismiss();
+            getCurrentLocationAndNavigate(nextPackage, "Waze");
+        });
+        
+        dialogView.findViewById(R.id.cardHereWeGo).setOnClickListener(v -> {
+            dialog.dismiss();
+            getCurrentLocationAndNavigate(nextPackage, "HereWeGo");
+        });
+        
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+        
+        dialog.show();
+    }
+    
+    /**
+     * Show elegant dialog for route points when no Realm data available
+     */
+    private void showNavigationAppSelectionDialogForRoutePoint(com.example.skyapp.bo.routing.BO_response.RoutePoint routePoint) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_navigation_selection, null);
+        
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        
+        android.app.AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        
+        // Set up click listeners for each option
+        dialogView.findViewById(R.id.cardGoogleMaps).setOnClickListener(v -> {
+            dialog.dismiss();
+            getCurrentLocationAndNavigateToRoutePoint(routePoint, "GoogleMaps");
+        });
+        
+        dialogView.findViewById(R.id.cardWaze).setOnClickListener(v -> {
+            dialog.dismiss();
+            getCurrentLocationAndNavigateToRoutePoint(routePoint, "Waze");
+        });
+        
+        dialogView.findViewById(R.id.cardHereWeGo).setOnClickListener(v -> {
+            dialog.dismiss();
+            getCurrentLocationAndNavigateToRoutePoint(routePoint, "HereWeGo");
+        });
+        
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+        
+        dialog.show();
     }
 
     /**
-     * Get current location for navigation purposes
+     * Get current location and navigate using selected app
      */
-    private void getCurrentLocationForNavigation(DeliveryPackageRealm nextPackage) {
+    private void getCurrentLocationAndNavigate(DeliveryPackageRealm nextPackage, String appType) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             
@@ -694,34 +761,156 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
 
+        // Set navigation state
+        navigationInProgress = true;
+        currentNavigationApp = appType;
+        currentDestinationName = nextPackage.getConsigneeName();
+        currentDestinationAddress = nextPackage.getConsigneeAddress();
+
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(this, location -> {
+                    double destLat = nextPackage.getLatitude();
+                    double destLng = nextPackage.getLongitude();
+                    String address = nextPackage.getConsigneeAddress();
+                    
                     if (location != null) {
-                        // Use NavigationHelper to show app selection dialog
-                        com.example.skyapp.utils.NavigationHelper.showNavigationDialog(
-                            this,
-                            nextPackage.getLatitude(),
-                            nextPackage.getLongitude(),
-                            nextPackage.getConsigneeAddress()
-                        );
-                        Log.d(TAG, "Showing navigation menu from current location to: " + nextPackage.getConsigneeAddress());
+                        // Use current location as origin
+                        double originLat = location.getLatitude();
+                        double originLng = location.getLongitude();
+                        navigateWithApp(appType, originLat, originLng, destLat, destLng, address);
+                        Log.d(TAG, "Navigating from current location to: " + address);
                     } else {
-                        Log.w(TAG, "Could not get current location");
-                        // Still show navigation dialog without current location optimization
-                        com.example.skyapp.utils.NavigationHelper.showNavigationDialog(
-                            this,
-                            nextPackage.getLatitude(),
-                            nextPackage.getLongitude(),
-                            nextPackage.getConsigneeAddress()
-                        );
+                        Log.w(TAG, "Could not get current location, using destination only");
+                        // Navigate to destination without origin
+                        navigateWithApp(appType, 0, 0, destLat, destLng, address);
                     }
                 });
     }
+    
+    /**
+     * Navigate to route point using selected app
+     */
+    private void getCurrentLocationAndNavigateToRoutePoint(com.example.skyapp.bo.routing.BO_response.RoutePoint routePoint, String appType) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            return;
+        }
+
+        // Set navigation state
+        navigationInProgress = true;
+        currentNavigationApp = appType;
+        currentDestinationName = routePoint.getConsignee().getName();
+        currentDestinationAddress = routePoint.getConsignee().getAddress();
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    double destLat = routePoint.getGeoRef().getLatitude();
+                    double destLng = routePoint.getGeoRef().getLongitude();
+                    String address = routePoint.getConsignee().getAddress();
+                    
+                    if (location != null) {
+                        // Use current location as origin
+                        double originLat = location.getLatitude();
+                        double originLng = location.getLongitude();
+                        navigateWithApp(appType, originLat, originLng, destLat, destLng, address);
+                        Log.d(TAG, "Navigating from current location to: " + address);
+                    } else {
+                        Log.w(TAG, "Could not get current location, using destination only");
+                        // Navigate to destination without origin
+                        navigateWithApp(appType, 0, 0, destLat, destLng, address);
+                    }
+                });
+    }
+    
+    /**
+     * Launch navigation app with coordinates
+     */
+    private void navigateWithApp(String appType, double originLat, double originLng, double destLat, double destLng, String address) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            
+            switch (appType) {
+                case "GoogleMaps":
+                    if (originLat != 0 && originLng != 0) {
+                        // With origin coordinates
+                        intent.setData(android.net.Uri.parse(String.format(
+                            "https://www.google.com/maps/dir/%f,%f/%f,%f",
+                            originLat, originLng, destLat, destLng
+                        )));
+                    } else {
+                        // Destination only
+                        intent.setData(android.net.Uri.parse("geo:" + destLat + "," + destLng + "?q=" + android.net.Uri.encode(address)));
+                    }
+                    intent.setPackage("com.google.android.apps.maps");
+                    break;
+                    
+                case "Waze":
+                    if (originLat != 0 && originLng != 0) {
+                        // Waze doesn't support origin in URL, so just use destination
+                        intent.setData(android.net.Uri.parse("waze://?ll=" + destLat + "," + destLng + "&navigate=yes"));
+                    } else {
+                        intent.setData(android.net.Uri.parse("waze://?q=" + android.net.Uri.encode(address)));
+                    }
+                    intent.setPackage("com.waze");
+                    break;
+                    
+                case "HereWeGo":
+                    if (originLat != 0 && originLng != 0) {
+                        // HERE Maps with coordinates
+                        intent.setData(android.net.Uri.parse(String.format(
+                            "here-route://%f,%f/%f,%f",
+                            originLat, originLng, destLat, destLng
+                        )));
+                    } else {
+                        intent.setData(android.net.Uri.parse("here-location://" + destLat + "," + destLng));
+                    }
+                    intent.setPackage("com.here.app.maps");
+                    break;
+            }
+            
+            startActivity(intent);
+            Log.d(TAG, "Launched " + appType + " for navigation");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to open " + appType + ", using fallback", e);
+            // Fallback to web version
+            navigateWithWebFallback(appType, destLat, destLng, address);
+        }
+    }
+    
+    /**
+     * Fallback to web version of navigation apps
+     */
+    private void navigateWithWebFallback(String appType, double destLat, double destLng, String address) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        
+        switch (appType) {
+            case "GoogleMaps":
+                intent.setData(android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(address)));
+                break;
+            case "Waze":
+                intent.setData(android.net.Uri.parse("https://waze.com/ul?ll=" + destLat + "," + destLng));
+                break;
+            case "HereWeGo":
+                intent.setData(android.net.Uri.parse("https://wego.here.com/directions/mylocation/" + destLat + "," + destLng));
+                break;
+        }
+        
+        try {
+            startActivity(intent);
+            Log.d(TAG, "Opened " + appType + " web version");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to open web version", e);
+            Toast.makeText(this, "Cannot open navigation app", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     /**
-     * Get next delivery from route points if Realm doesn't have data
+     * Get next delivery from route points if Realm doesn't have data and show dialog
      */
-    private void getNextDeliveryFromRoutePoints() {
+    private void getNextDeliveryFromRoutePointsAndShowDialog() {
         if (currentRoutePoints.isEmpty()) {
             Log.d(TAG, "No route points available - load routes first");
             return;
@@ -733,15 +922,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // Check if any package is in pending status (0)
                 for (com.example.skyapp.bo.routing.BO_response.RoutePointData packageData : point.getRoutePointData()) {
                     if (packageData.getDeliveryStatus() == 0) { // Pending
-                        // Found a pending package, use this point for navigation
+                        // Found a pending package, show navigation app selection
                         if (point.getGeoRef() != null && point.getConsignee() != null) {
-                            com.example.skyapp.utils.NavigationHelper.showNavigationDialog(
-                                this,
-                                point.getGeoRef().getLatitude(),
-                                point.getGeoRef().getLongitude(),
-                                point.getConsignee().getAddress()
-                            );
-                            Log.d(TAG, "Navigating to next pending delivery: " + point.getConsignee().getName());
+                            showNavigationAppSelectionDialogForRoutePoint(point);
+                            Log.d(TAG, "Found next pending delivery: " + point.getConsignee().getName());
                             return;
                         }
                     }
@@ -751,8 +935,87 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         
         // No pending deliveries found
         Log.d(TAG, "All deliveries completed or no deliveries available");
+        Toast.makeText(this, "No pending deliveries found", Toast.LENGTH_SHORT).show();
+    }
+    
+    /**
+     * Show arrival confirmation dialog when returning from navigation
+     */
+    private void showArrivalConfirmationDialog() {
+        navigationInProgress = false; // Reset the flag
+        
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Arrival Confirmation");
+        builder.setMessage("Have you arrived at " + currentDestinationName + "?");
+        
+        builder.setPositiveButton("Yes, I've arrived", (dialog, which) -> {
+            // Redirect to Scan activity
+            Intent intent = new Intent(MapsActivity.this, CheckpointActivity.class);
+            startActivity(intent);
+        });
+        
+        builder.setNeutralButton("Navigate again", (dialog, which) -> {
+            // Navigate again with the same app
+            restartNavigation();
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            // Stay in current activity - just dismiss dialog
+            dialog.dismiss();
+        });
+        
+        builder.setCancelable(false);
+        builder.show();
+    }
+    
+    /**
+     * Restart navigation with the same app and destination
+     */
+    private void restartNavigation() {
+        navigationInProgress = true;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            
+            switch (currentNavigationApp) {
+                case "GoogleMaps":
+                    intent.setData(android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(currentDestinationAddress)));
+                    intent.setPackage("com.google.android.apps.maps");
+                    break;
+                case "Waze":
+                    intent.setData(android.net.Uri.parse("waze://?q=" + android.net.Uri.encode(currentDestinationAddress)));
+                    intent.setPackage("com.waze");
+                    break;
+                case "HereWeGo":
+                    intent.setData(android.net.Uri.parse("here-location://" + android.net.Uri.encode(currentDestinationAddress)));
+                    intent.setPackage("com.here.app.maps");
+                    break;
+            }
+            
+            startActivity(intent);
+            Log.d(TAG, "Restarted navigation with " + currentNavigationApp);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to restart navigation", e);
+            // Fallback to web version
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(currentDestinationAddress)));
+            try {
+                startActivity(intent);
+            } catch (Exception ex) {
+                Toast.makeText(this, "Cannot restart navigation", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Check if user is returning from navigation
+        if (navigationInProgress) {
+            showArrivalConfirmationDialog();
+        }
+    }
+    
     @Override
     protected void onDestroy() {
         super.onDestroy();

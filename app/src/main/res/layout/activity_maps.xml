@@ -240,7 +240,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Checkpoints"
+                    android:text="Scan"
                     android:textColor="@color/sepex_red"
                     android:textSize="12sp" />
 
@@ -291,6 +291,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="1"
                     android:textSize="12sp"
+                    android:textColor="@color/white"
                     app:backgroundTint="@color/sepex_blue"
                     app:cornerRadius="8dp"
                     style="@style/Widget.Material3.Button" />
@@ -301,9 +302,9 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="4dp"
                     android:text="5"
-                    android:textColor="@color/sepex_blue"
+                    android:textColor="@color/on_surface"
                     android:textSize="12sp"
-                    app:backgroundTint="@color/surface_variant"
+                    app:backgroundTint="@color/white"
                     app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -312,9 +313,9 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="4dp"
                     android:text="10"
-                    android:textColor="@color/sepex_blue"
+                    android:textColor="@color/on_surface"
                     android:textSize="12sp"
-                    app:backgroundTint="@color/surface_variant"
+                    app:backgroundTint="@color/white"
                     app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -322,9 +323,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
                     android:text="20"
-                    android:textColor="@color/sepex_blue"
+                    android:textColor="@color/on_surface"
                     android:textSize="12sp"
-                    app:backgroundTint="@color/surface_variant"
+                    app:backgroundTint="@color/white"
                     app:cornerRadius="8dp" />
 
             </LinearLayout>
@@ -360,22 +361,11 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:contentDescription="My Current Location"
-            android:src="@drawable/map_point"
+            android:src="@android:drawable/ic_menu_mylocation"
             app:backgroundTint="@color/sepex_blue"
             app:fabSize="mini"
             app:tint="@color/on_primary" />
 
-        <!-- Route Origin FAB -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_route_origin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:contentDescription="Route Origin"
-            android:src="@drawable/simple_route"
-            app:backgroundTint="@color/light_blue"
-            app:fabSize="mini"
-            app:tint="@color/on_primary" />
 
         <!-- Route Filter Toggle FAB -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
