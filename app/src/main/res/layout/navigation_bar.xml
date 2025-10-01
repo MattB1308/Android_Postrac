@@ -179,7 +179,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_event"
+                    android:src="@drawable/ic_scan"
                     app:tint="@color/sepex_red" />
 
             </FrameLayout>

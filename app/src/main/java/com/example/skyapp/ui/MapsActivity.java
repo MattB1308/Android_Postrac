@@ -285,13 +285,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     * Update filter button visual states
+     * Update filter button visual states with modern gray/blue theme
      */
     private void updateFilterButtonStates() {
-        // Reset all buttons to outlined style
+        // Reset all buttons to gray style
         resetFilterButtons();
-        
-        // Set selected button to filled style
+
+        // Set selected button to blue style
         MaterialButton selectedButton;
         switch (currentFilterPoints) {
             case 5:
@@ -307,18 +307,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 selectedButton = btnShowNext1;
                 break;
         }
-        
-        // Update selected button appearance
+
+        // Update selected button appearance - blue background with white text
         selectedButton.setBackgroundTintList(getColorStateList(R.color.sepex_blue));
+        selectedButton.setTextColor(getColorStateList(R.color.white));
     }
 
     /**
-     * Reset all filter buttons to outlined style
+     * Reset all filter buttons to gray style with white text
      */
     private void resetFilterButtons() {
         MaterialButton[] buttons = {btnShowNext1, btnShowNext5, btnShowNext10, btnShowNext20};
         for (MaterialButton button : buttons) {
-            button.setBackgroundTintList(null);
+            // Set gray background and white text for unselected buttons
+            button.setBackgroundTintList(getColorStateList(R.color.button_gray));
+            button.setTextColor(getColorStateList(R.color.white));
         }
     }
 
@@ -685,69 +688,101 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     
     /**
-     * Show elegant dialog to select navigation app
+     * Show elegant dialog to select navigation app with enhanced animations
      */
     private void showNavigationAppSelectionDialog(DeliveryPackageRealm nextPackage) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_navigation_selection, null);
-        
+
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setView(dialogView);
-        
+
         android.app.AlertDialog dialog = builder.create();
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        
-        // Set up click listeners for each option
+
+        // Add ripple effect and scale animation for cards
+        setupCardAnimation(dialogView.findViewById(R.id.cardGoogleMaps));
+        setupCardAnimation(dialogView.findViewById(R.id.cardWaze));
+        setupCardAnimation(dialogView.findViewById(R.id.cardHereWeGo));
+
+        // Set up click listeners for each option with feedback animation
         dialogView.findViewById(R.id.cardGoogleMaps).setOnClickListener(v -> {
-            dialog.dismiss();
-            getCurrentLocationAndNavigate(nextPackage, "GoogleMaps");
+            animateCardClick(v, () -> {
+                dialog.dismiss();
+                getCurrentLocationAndNavigate(nextPackage, "GoogleMaps");
+            });
         });
-        
+
         dialogView.findViewById(R.id.cardWaze).setOnClickListener(v -> {
-            dialog.dismiss();
-            getCurrentLocationAndNavigate(nextPackage, "Waze");
+            animateCardClick(v, () -> {
+                dialog.dismiss();
+                getCurrentLocationAndNavigate(nextPackage, "Waze");
+            });
         });
-        
+
         dialogView.findViewById(R.id.cardHereWeGo).setOnClickListener(v -> {
-            dialog.dismiss();
-            getCurrentLocationAndNavigate(nextPackage, "HereWeGo");
+            animateCardClick(v, () -> {
+                dialog.dismiss();
+                getCurrentLocationAndNavigate(nextPackage, "HereWeGo");
+            });
         });
-        
-        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
-        
+
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> {
+            animateDialogExit(dialogView, dialog);
+        });
+
         dialog.show();
+
+        // Add entrance animation with staggered effect
+        animateDialogEntrance(dialogView);
     }
     
     /**
-     * Show elegant dialog for route points when no Realm data available
+     * Show elegant dialog for route points when no Realm data available with enhanced animations
      */
     private void showNavigationAppSelectionDialogForRoutePoint(com.example.skyapp.bo.routing.BO_response.RoutePoint routePoint) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_navigation_selection, null);
-        
+
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setView(dialogView);
-        
+
         android.app.AlertDialog dialog = builder.create();
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        
-        // Set up click listeners for each option
+
+        // Add ripple effect and scale animation for cards
+        setupCardAnimation(dialogView.findViewById(R.id.cardGoogleMaps));
+        setupCardAnimation(dialogView.findViewById(R.id.cardWaze));
+        setupCardAnimation(dialogView.findViewById(R.id.cardHereWeGo));
+
+        // Set up click listeners for each option with feedback animation
         dialogView.findViewById(R.id.cardGoogleMaps).setOnClickListener(v -> {
-            dialog.dismiss();
-            getCurrentLocationAndNavigateToRoutePoint(routePoint, "GoogleMaps");
+            animateCardClick(v, () -> {
+                dialog.dismiss();
+                getCurrentLocationAndNavigateToRoutePoint(routePoint, "GoogleMaps");
+            });
         });
-        
+
         dialogView.findViewById(R.id.cardWaze).setOnClickListener(v -> {
-            dialog.dismiss();
-            getCurrentLocationAndNavigateToRoutePoint(routePoint, "Waze");
+            animateCardClick(v, () -> {
+                dialog.dismiss();
+                getCurrentLocationAndNavigateToRoutePoint(routePoint, "Waze");
+            });
         });
-        
+
         dialogView.findViewById(R.id.cardHereWeGo).setOnClickListener(v -> {
-            dialog.dismiss();
-            getCurrentLocationAndNavigateToRoutePoint(routePoint, "HereWeGo");
+            animateCardClick(v, () -> {
+                dialog.dismiss();
+                getCurrentLocationAndNavigateToRoutePoint(routePoint, "HereWeGo");
+            });
         });
-        
-        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
-        
+
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> {
+            animateDialogExit(dialogView, dialog);
+        });
+
         dialog.show();
+
+        // Add entrance animation with staggered effect
+        animateDialogEntrance(dialogView);
     }
 
     /**
@@ -939,33 +974,68 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     
     /**
-     * Show arrival confirmation dialog when returning from navigation
+     * Show elegant arrival confirmation dialog when returning from navigation
      */
     private void showArrivalConfirmationDialog() {
         navigationInProgress = false; // Reset the flag
-        
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_arrival_confirmation, null);
+
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        builder.setTitle("Arrival Confirmation");
-        builder.setMessage("Have you arrived at " + currentDestinationName + "?");
-        
-        builder.setPositiveButton("Yes, I've arrived", (dialog, which) -> {
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        dialog.setCancelable(false);
+
+        // Set destination name
+        android.widget.TextView tvDestinationName = dialogView.findViewById(R.id.tvDestinationName);
+        tvDestinationName.setText(currentDestinationName);
+
+        // Add pulse animation to the background
+        View pulseBackground = dialogView.findViewById(R.id.pulseBackground);
+        android.animation.ObjectAnimator pulseAnimator = android.animation.ObjectAnimator.ofFloat(pulseBackground, "scaleX", 1.0f, 1.2f);
+        pulseAnimator.setDuration(1000);
+        pulseAnimator.setRepeatMode(android.animation.ObjectAnimator.REVERSE);
+        pulseAnimator.setRepeatCount(android.animation.ObjectAnimator.INFINITE);
+        pulseAnimator.start();
+
+        android.animation.ObjectAnimator pulseAnimatorY = android.animation.ObjectAnimator.ofFloat(pulseBackground, "scaleY", 1.0f, 1.2f);
+        pulseAnimatorY.setDuration(1000);
+        pulseAnimatorY.setRepeatMode(android.animation.ObjectAnimator.REVERSE);
+        pulseAnimatorY.setRepeatCount(android.animation.ObjectAnimator.INFINITE);
+        pulseAnimatorY.start();
+
+        // Set up click listeners
+        dialogView.findViewById(R.id.btnArrived).setOnClickListener(v -> {
+            dialog.dismiss();
             // Redirect to Scan activity
             Intent intent = new Intent(MapsActivity.this, CheckpointActivity.class);
             startActivity(intent);
         });
-        
-        builder.setNeutralButton("Navigate again", (dialog, which) -> {
+
+        dialogView.findViewById(R.id.btnNavigateAgain).setOnClickListener(v -> {
+            dialog.dismiss();
             // Navigate again with the same app
             restartNavigation();
         });
-        
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
+
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> {
             // Stay in current activity - just dismiss dialog
             dialog.dismiss();
         });
-        
-        builder.setCancelable(false);
-        builder.show();
+
+        dialog.show();
+
+        // Add entrance animation
+        dialogView.setAlpha(0f);
+        dialogView.setTranslationY(50f);
+        dialogView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
     }
     
     /**
@@ -1016,6 +1086,112 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
     
+    /**
+     * Setup card animation effects (hover, scale on touch)
+     */
+    private void setupCardAnimation(View card) {
+        card.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    v.animate()
+                            .scaleX(0.95f)
+                            .scaleY(0.95f)
+                            .setDuration(100)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .start();
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    v.animate()
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(100)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .start();
+                    break;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Animate card click with feedback before executing action
+     */
+    private void animateCardClick(View card, Runnable action) {
+        card.animate()
+                .scaleX(0.9f)
+                .scaleY(0.9f)
+                .setDuration(150)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .withEndAction(() -> {
+                    card.animate()
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(100)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .withEndAction(action)
+                            .start();
+                })
+                .start();
+    }
+
+    /**
+     * Animate dialog entrance with staggered card animations
+     */
+    private void animateDialogEntrance(View dialogView) {
+        // Initial state - dialog slides up and fades in
+        dialogView.setAlpha(0f);
+        dialogView.setTranslationY(100f);
+        dialogView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
+
+        // Staggered card animations
+        View[] cards = {
+                dialogView.findViewById(R.id.cardGoogleMaps),
+                dialogView.findViewById(R.id.cardWaze),
+                dialogView.findViewById(R.id.cardHereWeGo)
+        };
+
+        for (int i = 0; i < cards.length; i++) {
+            View card = cards[i];
+            card.setAlpha(0f);
+            card.setTranslationX(-50f);
+            card.animate()
+                    .alpha(1f)
+                    .translationX(0f)
+                    .setStartDelay(100 + (i * 100)) // Staggered delay
+                    .setDuration(300)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+        }
+
+        // Cancel button animation
+        View cancelBtn = dialogView.findViewById(R.id.btnCancel);
+        cancelBtn.setAlpha(0f);
+        cancelBtn.animate()
+                .alpha(1f)
+                .setStartDelay(500)
+                .setDuration(200)
+                .start();
+    }
+
+    /**
+     * Animate dialog exit
+     */
+    private void animateDialogExit(View dialogView, android.app.AlertDialog dialog) {
+        dialogView.animate()
+                .alpha(0f)
+                .translationY(50f)
+                .setDuration(200)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .withEndAction(dialog::dismiss)
+                .start();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();

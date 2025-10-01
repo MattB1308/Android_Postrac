@@ -4,7 +4,18 @@
       "Bash(./gradlew:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Read(//f/Projects_info/Sepex_Postrac/**)"
+      "Read(//f/Projects_info/Sepex_Postrac/**)",
+      "Bash(java:*)",
+      "Bash(where java)",
+      "Bash(echo $JAVA_HOME)",
+      "Bash(set JAVA_HOME=C:Program FilesAndroidAndroid Studiojbr)",
+      "Bash(set PATH=%JAVA_HOME%bin)",
+      "Bash(%PATH%)",
+      "Bash(set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\")",
+      "Bash(\"%JAVA_HOME%\\bin\\java\" -version)",
+      "Bash(gradlew.bat assembleDebug:*)",
+      "Bash(export JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\")",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")"
     ],
     "deny": [],
     "ask": []

@@ -246,25 +246,7 @@ public class CheckpointActivity extends AppCompatActivity {
         
         // Set delete button click listener
         deleteButton.setOnClickListener(v -> {
-            // Show confirmation dialog
-            new AlertDialog.Builder(this)
-                    .setTitle("Delete Photo")
-                    .setMessage("Are you sure you want to delete this photo?")
-                    .setPositiveButton("Delete", (dialog, which) -> {
-                        capturedImagePaths.remove(imagePath);
-                        photoGrid.removeView(photoView);
-                        
-                        // Delete the file
-                        File file = new File(imagePath);
-                        if (file.exists()) {
-                            file.delete();
-                        }
-                        
-                        updateUI();
-                        Log.d(TAG, "Photo deleted: " + imagePath);
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+            showDeletePhotoDialog(imagePath, photoView);
         });
         
         photoGrid.addView(photoView);
@@ -387,39 +369,198 @@ public class CheckpointActivity extends AppCompatActivity {
     }
     
     private void resetForm() {
-        new AlertDialog.Builder(this)
-                .setTitle("Reset Form")
-                .setMessage("Are you sure you want to reset all data?")
-                .setPositiveButton("Reset", (dialog, which) -> {
-                    // Clear barcode
-                    scannedBarcode = "";
-                    
-                    // Clear images
-                    for (String imagePath : capturedImagePaths) {
+        showResetFormDialog();
+    }
+
+    /**
+     * Show elegant reset form confirmation dialog
+     */
+    private void showResetFormDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_reset_form, null);
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        // Update data summary
+        TextView tvBarcodeStatus = dialogView.findViewById(R.id.tvBarcodeStatus);
+        TextView tvPhotoCount = dialogView.findViewById(R.id.tvPhotoCount);
+
+        tvBarcodeStatus.setText(scannedBarcode.isEmpty() ? "None" : "Scanned");
+        tvPhotoCount.setText(String.valueOf(capturedImagePaths.size()));
+
+        // Add rotation animation to reset background
+        View resetRotateBackground = dialogView.findViewById(R.id.resetRotateBackground);
+        android.animation.ObjectAnimator rotateAnimator = android.animation.ObjectAnimator.ofFloat(resetRotateBackground, "rotation", 0f, 360f);
+        rotateAnimator.setDuration(3000);
+        rotateAnimator.setRepeatCount(android.animation.ObjectAnimator.INFINITE);
+        rotateAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
+        rotateAnimator.start();
+
+        // Set up click listeners
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> {
+            // Add exit animation
+            dialogView.animate()
+                    .alpha(0f)
+                    .translationY(30f)
+                    .setDuration(150)
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(dialog::dismiss)
+                    .start();
+        });
+
+        dialogView.findViewById(R.id.btnReset).setOnClickListener(v -> {
+            // Add reset animation effect
+            dialogView.findViewById(R.id.btnReset).animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        // Perform reset
+                        performReset();
+
+                        // Close dialog with animation
+                        dialogView.animate()
+                                .alpha(0f)
+                                .translationY(30f)
+                                .setDuration(150)
+                                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                                .withEndAction(dialog::dismiss)
+                                .start();
+                    })
+                    .start();
+        });
+
+        dialog.show();
+
+        // Add entrance animation
+        dialogView.setAlpha(0f);
+        dialogView.setTranslationY(50f);
+        dialogView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(250)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
+    }
+
+    /**
+     * Perform the actual reset operation
+     */
+    private void performReset() {
+        // Clear barcode
+        scannedBarcode = "";
+
+        // Clear images
+        for (String imagePath : capturedImagePaths) {
+            File file = new File(imagePath);
+            if (file.exists()) {
+                file.delete();
+            }
+        }
+        capturedImagePaths.clear();
+
+        // Clear photo grid
+        photoGrid.removeAllViews();
+
+        // Reset status
+        currentStatus = DeliveryStatus.NONE;
+
+        // Hide status message
+        if (statusMessageCard != null) {
+            statusMessageCard.setVisibility(View.GONE);
+        }
+
+        // Update UI
+        updateUI();
+
+        Toast.makeText(this, "Form reset successfully", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Show elegant delete photo confirmation dialog
+     */
+    private void showDeletePhotoDialog(String imagePath, View photoView) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_delete_photo, null);
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setView(dialogView);
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        // Add pulse animation to warning background
+        View warningPulseBackground = dialogView.findViewById(R.id.warningPulseBackground);
+        android.animation.ObjectAnimator pulseAnimator = android.animation.ObjectAnimator.ofFloat(warningPulseBackground, "scaleX", 1.0f, 1.15f);
+        pulseAnimator.setDuration(800);
+        pulseAnimator.setRepeatMode(android.animation.ObjectAnimator.REVERSE);
+        pulseAnimator.setRepeatCount(android.animation.ObjectAnimator.INFINITE);
+        pulseAnimator.start();
+
+        android.animation.ObjectAnimator pulseAnimatorY = android.animation.ObjectAnimator.ofFloat(warningPulseBackground, "scaleY", 1.0f, 1.15f);
+        pulseAnimatorY.setDuration(800);
+        pulseAnimatorY.setRepeatMode(android.animation.ObjectAnimator.REVERSE);
+        pulseAnimatorY.setRepeatCount(android.animation.ObjectAnimator.INFINITE);
+        pulseAnimatorY.start();
+
+        // Set up click listeners
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> {
+            // Add exit animation
+            dialogView.animate()
+                    .alpha(0f)
+                    .translationY(30f)
+                    .setDuration(150)
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(dialog::dismiss)
+                    .start();
+        });
+
+        dialogView.findViewById(R.id.btnDelete).setOnClickListener(v -> {
+            // Add delete animation effect
+            dialogView.findViewById(R.id.btnDelete).animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        // Perform deletion
+                        capturedImagePaths.remove(imagePath);
+                        photoGrid.removeView(photoView);
+
+                        // Delete the file
                         File file = new File(imagePath);
                         if (file.exists()) {
                             file.delete();
                         }
-                    }
-                    capturedImagePaths.clear();
-                    
-                    // Clear photo grid
-                    photoGrid.removeAllViews();
-                    
-                    // Reset status
-                    currentStatus = DeliveryStatus.NONE;
-                    
-                    // Hide status message
-                    if (statusMessageCard != null) {
-                        statusMessageCard.setVisibility(View.GONE);
-                    }
-                    
-                    // Update UI
-                    updateUI();
-                    
-                    Toast.makeText(this, "Form reset successfully", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+
+                        updateUI();
+                        Log.d(TAG, "Photo deleted: " + imagePath);
+
+                        // Close dialog with animation
+                        dialogView.animate()
+                                .alpha(0f)
+                                .translationY(30f)
+                                .setDuration(150)
+                                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                                .withEndAction(dialog::dismiss)
+                                .start();
+                    })
+                    .start();
+        });
+
+        dialog.show();
+
+        // Add entrance animation
+        dialogView.setAlpha(0f);
+        dialogView.setTranslationY(50f);
+        dialogView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(250)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
     }
 }

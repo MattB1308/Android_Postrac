@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,10 +8,11 @@
     android:background="@color/background"
     tools:context=".ui.CheckpointActivity">
 
+    <!-- Main Content ScrollView -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="100dp"
+        android:layout_marginBottom="160dp"
         android:padding="16dp">
 
         <LinearLayout
@@ -95,14 +96,20 @@
                             android:background="@color/light_gray"
                             android:layout_marginEnd="8dp" />
 
-                        <Button
+                        <com.google.android.material.button.MaterialButton
                             android:id="@+id/scanBarcodeButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Scan"
                             android:textAllCaps="false"
                             android:textColor="@color/white"
-                            app:backgroundTint="@color/dark_navy"
+                            android:fontFamily="sans-serif-medium"
+                            app:backgroundTint="@color/sepex_blue"
+                            app:cornerRadius="8dp"
+                            app:icon="@drawable/ic_scan"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp"
+                            app:iconTint="@color/white"
                             style="@style/Widget.Material3.Button" />
 
                     </LinearLayout>
@@ -165,7 +172,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:columnCount="2"
-                        android:rowCount="2">
+                        android:useDefaultMargins="false"
+                        android:alignmentMode="alignBounds">
 
                         <!-- Photos will be added dynamically here -->
 
@@ -223,83 +231,104 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Status Message (Initially Hidden) -->
-            <LinearLayout
-                android:id="@+id/statusMessageCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                android:background="#E8F5E8"
-                android:visibility="gone"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:id="@+id/statusMessageIcon"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_marginEnd="8dp"
-                    android:src="@drawable/ic_check_circle"
-                    app:tint="#4CAF50" />
-
-                <TextView
-                    android:id="@+id/statusMessageText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Marked as Delivered"
-                    android:textSize="14sp"
-                    android:textColor="#4CAF50" />
-
-            </LinearLayout>
-
-            <!-- Action Buttons -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginTop="8dp">
-
-                <Button
-                    android:id="@+id/exceptionButton"
-                    android:layout_width="0dp"
-                    android:layout_height="56dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="Mark as Exception"
-                    android:textSize="13sp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/dark_navy"
-                    android:maxLines="2"
-                    android:gravity="center"
-                    app:backgroundTint="#FF9800"
-                    app:cornerRadius="6dp"
-                    style="@style/Widget.Material3.Button" />
-
-                <Button
-                    android:id="@+id/deliveredButton"
-                    android:layout_width="0dp"
-                    android:layout_height="56dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:text="Mark as Delivered"
-                    android:textSize="13sp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    android:maxLines="2"
-                    android:gravity="center"
-                    app:backgroundTint="@color/dark_navy"
-                    app:cornerRadius="6dp"
-                    style="@style/Widget.Material3.Button" />
-
-            </LinearLayout>
-
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
+
+    <!-- Status Message (Fixed Position with Modern Card Design) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/statusMessageCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="140dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/sepex_green_light"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:strokeColor="@color/sepex_green"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/statusMessageIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_check_circle"
+                app:tint="@color/sepex_green" />
+
+            <TextView
+                android:id="@+id/statusMessageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Marked as Delivered"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/sepex_green"
+                android:fontFamily="sans-serif-medium" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Action Buttons (Fixed Position) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="16dp"
+        android:layout_marginBottom="80dp"
+        android:background="@color/background">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/exceptionButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Mark as Exception"
+            android:textSize="13sp"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:maxLines="2"
+            android:gravity="center"
+            android:fontFamily="sans-serif-medium"
+            app:backgroundTint="@color/sepex_red"
+            app:cornerRadius="12dp"
+            app:elevation="4dp"
+            style="@style/Widget.Material3.Button" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/deliveredButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Mark as Delivered"
+            android:textSize="13sp"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:maxLines="2"
+            android:gravity="center"
+            android:fontFamily="sans-serif-medium"
+            app:backgroundTint="@color/sepex_blue"
+            app:cornerRadius="12dp"
+            app:elevation="4dp"
+            style="@style/Widget.Material3.Button" />
+
+    </LinearLayout>
 
     <!-- Navigation Bar -->
     <include layout="@layout/navigation_bar" />
